@@ -1,0 +1,14 @@
+# .gitignore for Arthiva Money
+# Credentials & secrets
+.env
+*.local
+credentials.json
+secrets/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/

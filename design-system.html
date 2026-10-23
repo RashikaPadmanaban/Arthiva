@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arthiva Money — Design System & Style Specification</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      background: var(--bg-app);
+      color: var(--text-primary);
+      padding: 32px 20px;
+      line-height: 1.6;
+    }
+    .spec-container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .spec-header {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .spec-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
+    }
+    .spec-section-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .spec-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .swatch-card {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--bg-surface);
+    }
+    .swatch-color {
+      height: 72px;
+      display: flex;
+      align-items: flex-end;
+      padding: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #FFF;
+    }
+    .swatch-info {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+    .swatch-name {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .swatch-hex {
+      font-family: monospace;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    .swatch-contrast {
+      font-size: 10.5px;
+      color: var(--primary);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .type-spec-row {
+      display: flex;
+      align-items: baseline;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      gap: 24px;
+    }
+    .type-meta {
+      width: 180px;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .type-sample {
+      flex: 1;
+    }
+    .component-sandbox {
+      background: var(--bg-subtle);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .token-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .token-table th, .token-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .token-table th {
+      color: var(--text-muted);
+      font-size: 11.5px;
+      text-transform: uppercase;
+    }
+    .touch-target-box {
+      position: relative;
+      display: inline-flex;
+    }
+    .touch-target-box::after {
+      content: "44px min";
+      position: absolute;
+      top: -18px;
+      right: 0;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--bg-accent-subtle);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="spec-container">
+  
+  <!-- Header -->
+  <div class="spec-header">
+    <div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <div class="brand-icon-circle" style="width: 42px; height: 42px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FFFFFF" stroke-width="2.3">
+            <path d="M12 2L4 20h4.5l1.8-4.5h5.4L17.5 20H22L14 2h-2z" fill="rgba(255,255,255,0.2)"/>
+            <path d="M12 5.5L8.5 13.5h7L12 5.5z" fill="#FFFFFF"/>
+            <path d="M7 10h10" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 style="font-family: var(--font-display); font-size: 24px; font-weight: 800;">Arthiva Money — Design System</h1>
+      </div>
+      <p style="font-size: 13.5px; color: var(--text-secondary); max-width: 580px;">
+        High-fidelity style sheet and UI component library for India-first personal finance. Modern, approachable purple-lavender-pink palette, WCAG AA compliance, and generous touch targets.
+      </p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="index.html" class="btn-primary" style="text-decoration: none; padding: 0 18px; width: auto;">
+        ← Back to Mobile Prototype
+      </a>
+      <button class="btn-secondary" style="width: auto; padding: 0 16px;" onclick="toggleDarkMode()">
+        Toggle Dark/Light
+      </button>
+    </div>
+  </div>
+
+  <!-- 1. Color Palette -->
+  <div class="spec-section">
+    <div class="spec-section-title">
+      <span>1. Color Palette & WCAG AA Contrast</span>
+    </div>
+    <p class="spec-desc">
+      Anchored by modern Royal Purple (#7C3AED), soft lavender surface (#EDE9FE), vibrant blush pink (#EC4899), and ink-dark text (#0F172A). State alerts use warm amber (#D97706) instead of aggressive red to prevent anxiety.
+    </p>
+
+    <div class="swatch-grid">
+      <!-- Primary Purple -->
+      <div class="swatch-card">
+        <div class="swatch-color" style="background: #7C3AED;">Primary</div>
+        <div class="swatch-info">
+          <div class="swatch-name">Royal Purple</div>
+          <div class="swatch-hex">#7C3AED</div>
+          <div class="swatch-contrast">Contrast: 5.8:1 (Pass AA)</div>
+        </div>
+      </div>
+
+      <!-- Lavender Tint -->
+      <div class="swatch-card">
+        <div class="swatch-color" style="background: #EDE9FE; color: #5B21B6; border-bottom: 1px solid #DDD6FE;">Lavender Subtle</div>
+        <div class="swatch-info">
+          <div class="swatch-name">Soft Lavender Tint</div>
+          <div class="swatch-hex">#EDE9FE</div>
+          <div class="swatch-contrast">Hero cards & active chips</div>
+        </div>
+      </div>
+
+      <!-- Blush Pink Accent -->
+      <div class="swatch-card">
+        <div class="swatch-color" style="background: #EC4899;">Accent Pink</div>
+        <div class="swatch-info">
+          <div class="swatch-name">Blush Pink</div>
+          <div class="swatch-hex">#EC4899</div>
+          <div class="swatch-contrast">Goals, highlights & badges</div>
+        </div>
+      </div>
+
+      <!-- Soft Neutral App Bg -->
+      <div class="swatch-card">
+        <div class="swatch-color" style="background: #FAF8FD; color: #0F172A; border-bottom: 1px solid #E9E4F0;">App Surface</div>
+        <div class="swatch-info">
+          <div class="swatch-name">Soft Lavender White</div>
+          <div class="swatch-hex">#FAF8FD</div>
+          <div class="swatch-contrast">Warm, glare-free background</div>
+        </div>
+      </div>
+
+      <!-- Ink Primary -->
+      <div class="swatch-card">
+        <div class="swatch-color" style="background: #0F172A;">Ink Slate</div>
+        <div class="swatch-info">
+          <div class="swatch-name">Text Primary</div>
+          <div class="swatch-hex">#0F172A</div>
+          <div class="swatch-contrast">Contrast: 16.4:1 (Pass AAA)</div>
+        </div>
+      </div>
+
+      <!-- Amber Risk -->
+      <div class="swatch-card">
+        <div class="swatch-color" style="background: #D97706;">At-Risk State</div>
+        <div class="swatch-info">
+          <div class="swatch-name">Warm Amber (No Red)</div>
+          <div class="swatch-hex">#D97706</div>
+          <div class="swatch-contrast">Calm shortfall advisory</div>
+        </div>
+      </div>
+
+      <!-- Safe Emerald -->
+      <div class="swatch-card">
+        <div class="swatch-color" style="background: #DCFCE7; color: #166534; border-bottom: 1px solid #BBF7D0;">Safe State</div>
+        <div class="swatch-info">
+          <div class="swatch-name">Mint Green Tint</div>
+          <div class="swatch-hex">#DCFCE7</div>
+          <div class="swatch-contrast">Paid commitments</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Typography Scale -->
+  <div class="spec-section">
+    <div class="spec-section-title">
+      <span>2. Typography Scale & Tabular Numbers</span>
+    </div>
+    <p class="spec-desc">
+      Headings & Hero Numbers: <strong>Bricolage Grotesque</strong>. Body text: <strong>Source Sans 3</strong>. Tabular figures enabled across all currency representations.
+    </p>
+
+    <div class="type-spec-row">
+      <div class="type-meta">
+        <strong>Hero Number</strong><br>
+        Bricolage 800 · 38px<br>
+        <code>tabular-nums</code>
+      </div>
+      <div class="type-sample">
+        <div style="font-family: var(--font-display); font-size: 38px; font-weight: 800; color: var(--primary);" class="tabular-nums">
+          ₹15,000 <span style="font-size: 20px; font-weight: 600; color: var(--text-secondary);">Safe to spend</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="type-spec-row">
+      <div class="type-meta">
+        <strong>Screen Heading 1</strong><br>
+        Bricolage 800 · 26px
+      </div>
+      <div class="type-sample">
+        <h2 style="font-family: var(--font-display); font-size: 26px; font-weight: 800;">
+          Can I afford what's coming up?
+        </h2>
+      </div>
+    </div>
+
+    <div class="type-spec-row">
+      <div class="type-meta">
+        <strong>Card Heading 2</strong><br>
+        Bricolage 700 · 18px
+      </div>
+      <div class="type-sample">
+        <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 700;">
+          Safe-to-Spend Breakdown
+        </h3>
+      </div>
+    </div>
+
+    <div class="type-spec-row">
+      <div class="type-meta">
+        <strong>Body Regular</strong><br>
+        Source Sans 3 · 15px
+      </div>
+      <div class="type-sample">
+        <p style="font-size: 15px; color: var(--text-secondary);">
+          We calculate what you can freely spend after your rent, EMIs, and savings goal are safely accounted for.
+        </p>
+      </div>
+    </div>
+
+    <div class="type-spec-row">
+      <div class="type-meta">
+        <strong>Indian Grouping Demo</strong><br>
+        Tabular Numerals
+      </div>
+      <div class="type-sample">
+        <div style="font-family: var(--font-display); font-size: 18px; font-weight: 700;" class="tabular-nums">
+          ₹50,000 · ₹1,00,000 · ₹12,000 · ₹3,000 · ₹12.5L
+        </div>
+        <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Strictly adheres to Indian comma placement (Lakhs & Crores).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Component Showcase -->
+  <div class="spec-section">
+    <div class="spec-section-title">
+      <span>3. Component Library (44px Minimum Touch Targets)</span>
+    </div>
+    <p class="spec-desc">Interactive components built with WCAG AA compliant states, active feedback, and generous padding.</p>
+
+    <!-- Buttons -->
+    <h4 style="font-family: var(--font-display); font-size: 14px; margin-bottom: 10px;">Buttons</h4>
+    <div class="component-sandbox">
+      <div class="touch-target-box">
+        <button class="btn-primary" style="width: auto; padding: 0 20px;">Primary Purple Action</button>
+      </div>
+      <div class="touch-target-box">
+        <button class="btn-secondary" style="width: auto; padding: 0 16px;">Secondary Subtle</button>
+      </div>
+      <div class="touch-target-box">
+        <button class="btn-pro" style="width: auto; padding: 0 18px;">★ Pro Gold Action</button>
+      </div>
+      <div class="touch-target-box">
+        <button class="icon-btn" style="border: 1px solid var(--border-subtle);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        </button>
+      </div>
+      <div class="touch-target-box">
+        <button class="nav-fab" style="transform: none; position: static;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Direct Balance Editing -->
+    <h4 style="font-family: var(--font-display); font-size: 14px; margin-bottom: 10px;">Direct Balance Input Component</h4>
+    <div style="max-width: 480px; margin-bottom: 16px;">
+      <div class="balance-direct-box">
+        <label class="form-label">DIRECT EDITABLE INPUT (WITH SIMULATION & DELTA)</label>
+        <input type="number" class="balance-input-field tabular-nums" value="32000" style="margin-bottom: 6px;">
+        <div class="balance-delta-row">
+          <span>Change vs previous:</span>
+          <span class="balance-delta-badge pos">+₹2,000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chips & Badges -->
+    <h4 style="font-family: var(--font-display); font-size: 14px; margin-bottom: 10px;">Chips & Status Tags</h4>
+    <div class="component-sandbox">
+      <div class="selectable-chip selected">🏠 Rent (Selected)</div>
+      <div class="selectable-chip">📱 Phone EMI</div>
+      <span class="chip-tag auto-debit">Auto-debit</span>
+      <span class="chip-tag paid">✓ Paid on 2 Oct</span>
+      <span class="chip-tag skipped">Skipped this cycle</span>
+      <span class="chip-tag overdue">Shortfall Risk</span>
+      <span class="goal-ring-badge">38% Complete</span>
+    </div>
+
+    <!-- Alert Component -->
+    <h4 style="font-family: var(--font-display); font-size: 14px; margin-bottom: 10px;">Alert Pattern (Non-Shaming Warm Amber)</h4>
+    <div style="max-width: 480px; margin-bottom: 16px;">
+      <div class="alert-card" style="margin: 0;">
+        <div class="alert-top">
+          <div class="alert-tag">Pacing Attention</div>
+        </div>
+        <div class="alert-msg">
+          At this pace you'll be ₹2,400 short for your insurance renewal on 28 Oct.
+        </div>
+        <div class="alert-action-row">
+          <span class="alert-link">See adjustment options →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Sample -->
+    <h4 style="font-family: var(--font-display); font-size: 14px; margin-bottom: 10px;">Commitment Card</h4>
+    <div style="max-width: 480px;">
+      <div class="bill-item">
+        <div class="bill-left">
+          <div class="bill-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <div class="bill-details">
+            <h4>Health Insurance Renewal</h4>
+            <div class="bill-meta-tags">
+              <span class="chip-tag">Insurance</span>
+              <span class="chip-tag auto-debit">UPI Mandate</span>
+              <span class="chip-tag overdue">Shortfall risk</span>
+            </div>
+          </div>
+        </div>
+        <div class="bill-right">
+          <div class="bill-amount tabular-nums">₹7,000</div>
+          <div class="bill-due-date">Due 28 Oct</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 4. India-First Rules Checklist -->
+  <div class="spec-section">
+    <div class="spec-section-title">
+      <span>4. India-First Design Rules</span>
+    </div>
+    <table class="token-table">
+      <thead>
+        <tr>
+          <th>Principle</th>
+          <th>Implementation</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Currency Grouping</strong></td>
+          <td>Indian lakhs and crores grouping, never western thousands</td>
+          <td><code>₹1,00,000</code>, <code>₹15,000</code>, <code>₹12.5L</code></td>
+        </tr>
+        <tr>
+          <td><strong>Pay Cycle Logic</strong></td>
+          <td>All calculations run Payday-to-Payday (e.g. 1 Oct – 1 Nov or 30 Sep – 30 Oct), never calendar month</td>
+          <td>12 days to payday, Day 20 of 31</td>
+        </tr>
+        <tr>
+          <td><strong>Commitment Types</strong></td>
+          <td>Preset chips match Indian salaried households with custom category expansion</td>
+          <td>Rent, EMI, SIP, Insurance, Cook/Maid, Wi-Fi</td>
+        </tr>
+        <tr>
+          <td><strong>Honest Self-Reporting</strong></td>
+          <td>Labeled as user-entered, never misleadingly "bank verified"</td>
+          <td><em>"You entered · 2 days ago"</em></td>
+        </tr>
+        <tr>
+          <td><strong>Privacy Pledge</strong></td>
+          <td>Zero SMS scraping, zero bank password harvesting</td>
+          <td>Direct balance entry & audit log</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
