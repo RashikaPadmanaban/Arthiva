@@ -4473,7 +4473,7 @@ const PDF_CATEGORY_COLORS = {
 };
 
 function getPdfCategoryStyle(catName) {
-  return PDF_CATEGORY_COLORS[catName] || { hex: "#7C3AED", rgb: [0.486, 0.227, 0.929], tag: "[CAT]" };
+  return PDF_CATEGORY_COLORS[catName] || { hex: "#7C3AED", rgb: [0.486, 0.227, 0.929], tag: "" };
 }
 
 function pdfCleanStr(str) {
@@ -4481,10 +4481,10 @@ function pdfCleanStr(str) {
     .replace(/₹/g, "Rs. ")
     .replace(/[—–]/g, "-")
     .replace(/[•·]/g, "|")
-    .replace(/[^\x20-\x7E]/g, "")
     .replace(/\\/g, "\\\\")
     .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)");
+    .replace(/\)/g, "\\)")
+    .replace(/[^\x20-\x7E]/g, "");
 }
 
 /**
@@ -4522,108 +4522,133 @@ function buildMultiPageVectorPDF(fin, data, user) {
   const textAt = (x, y, size, font, rgb, str) =>
     `BT /${font} ${size} Tf ${fmt(rgb[0], rgb[1], rgb[2])} rg 1 0 0 1 ${x} ${y} Tm (${pdfCleanStr(str)}) Tj ET\n`;
   const textRight = (rightX, y, size, font, rgb, str) => {
-    const clean = pdfCleanStr(str);
-    const approxWidth = clean.length * size * 0.52;
-    const x = Math.max(36, Math.round(rightX - approxWidth));
-    return textAt(x, y, size, font, rgb, clean);
+    const rawStr = String(str || "");
+    const approxWidth = rawStr.length * size * 0.52;
+    const x = Math.max(54, Math.round(rightX - approxWidth));
+    return textAt(x, y, size, font, rgb, rawStr);
   };
   const lineSeg = (x1, y1, x2, y2, rgb, lw = 1, dash = "") =>
     `q ${lw} w ${dash ? `[${dash}] 0 d ` : ""}${fmt(rgb[0], rgb[1], rgb[2])} RG ${x1} ${y1} m ${x2} ${y2} l S Q\n`;
-  const drawAmberTriangle = (cx, cy, sz, rgb) =>
-    `q ${fmt(rgb[0], rgb[1], rgb[2])} rg ${cx} ${(cy + sz).toFixed(1)} m ${(cx - sz * 0.6).toFixed(1)} ${cy} l ${(cx + sz * 0.6).toFixed(1)} ${cy} l f Q\n`;
 
   const goals = Array.isArray(ArthivaState.goals) ? ArthivaState.goals : [];
   const totalGoalSaved = goals.reduce((s, g) => s + (Number(g.currentSaved) || 0), 0);
   const netWorth = fin.currentBalance + totalGoalSaved + 18000;
   const emiTotal = ArthivaState.commitments
-    .filter(c => c.category.toLowerCase().includes("emi"))
+    .filter(c => c.category && c.category.toLowerCase().includes("emi"))
     .reduce((s, c) => s + Number(c.amount), 0);
   const generatedOn = getFormattedTimestampIST();
 
-  // PART B — Exact PDF Colour System Tokens (Zero Red Anywhere)
-  const ROYAL_PURPLE      = [0.486, 0.227, 0.929]; // #7C3AED — Header bar, section titles, primary chart series, logo accents
-  const LAVENDER_SUBTLE   = [0.929, 0.914, 0.996]; // #EDE9FE — Summary/hero tiles, table header rows, active chips
-  const BLUSH_PINK        = [0.925, 0.282, 0.600]; // #EC4899 — Goals, highlights, badges, goal progress bars
-  const PAGE_SURFACE      = [0.980, 0.973, 0.992]; // #FAF8FD — Page background & alternating table rows
-  const INK_SLATE         = [0.059, 0.090, 0.165]; // #0F172A — All body text, numbers and table text
-  const WARM_AMBER        = [0.851, 0.467, 0.024]; // #D97706 — At-risk fills, bars, icons, badges
-  const DARK_AMBER_TEXT   = [0.706, 0.325, 0.035]; // #B45309 — Small amber text (WCAG AA compliant on light bg)
-  const MINT_GREEN_TINT   = [0.863, 0.988, 0.906]; // #DCFCE7 — Paid commitments (row or badge background)
-  const DARK_GREEN_TEXT   = [0.086, 0.396, 0.204]; // #166534 — Paid badge text (WCAG AA compliant on #DCFCE7)
-  const PURPLE_TINT_LIGHT = [0.659, 0.333, 0.969]; // #A855F7 — Lighter purple tint for secondary chart series
-  const WHITE             = [1.000, 1.000, 1.000]; // #FFFFFF
+  // Color Tokens
+  // Status Colors (Plain colored text, no filled background, no bold, no brackets)
+  const STATUS_PAID_COLOR      = [0.118, 0.557, 0.243]; // #1E8E3E - Green (Paid / On track)
+  const STATUS_DUE_COLOR       = [0.698, 0.416, 0.000]; // #B26A00 - Amber (Due)
+  const STATUS_RISK_COLOR      = [0.776, 0.157, 0.157]; // #C62828 - Red (Risk)
+  const STATUS_SCHEDULED_COLOR = [0.082, 0.396, 0.753]; // #1565C0 - Blue (Scheduled)
+
+  // Standard Design System Palette
+  const ROYAL_PURPLE    = [0.486, 0.227, 0.929]; // #7C3AED - Header banner, section headers, charts
+  const LAVENDER_SUBTLE = [0.929, 0.914, 0.996]; // #EDE9FE - Summary tile background, dividers, subtle bars
+  const PAGE_SURFACE    = [0.980, 0.973, 0.992]; // #FAF8FD - Alternating table row background
+  const INK_SLATE       = [0.059, 0.090, 0.165]; // #0F172A - Body text, amounts, values
+  const MUTED_GRAY      = [0.420, 0.450, 0.500]; // #6B7280 - Metadata, headers, footers, tile labels
+  const BORDER_SUBTLE   = [0.890, 0.880, 0.930]; // Subtle border lines
+  const WHITE           = [1.000, 1.000, 1.000]; // #FFFFFF
+
+  // Page Margins: 19mm (~54pt) on all sides. Printable width = 595 - 108 = 487pt. Right edge = 541pt.
+  const MARGIN_LEFT = 54;
+  const MARGIN_RIGHT = 541;
+  const CONTENT_WIDTH = 487;
 
   // =========================================================================
-  // PAGE 1: SOFT LAVENDER WHITE SURFACE, ROYAL PURPLE HEADER, LAVENDER TILES & CHARTS
+  // PAGE 1: EXECUTIVE SUMMARY, SPENDING BARS, TREND CHARTS & SAVINGS GOALS
   // =========================================================================
   let p1 = "";
-  // Full page background surface (#FAF8FD)
-  p1 += rectFill(0, 0, 595, 842, PAGE_SURFACE);
+  p1 += rectFill(0, 0, 595, 842, WHITE);
 
-  // Royal Purple Header Bar (#7C3AED) with White Text (#FFFFFF) & Official Vector Logo
-  p1 += rectFill(36, 742, 523, 68, ROYAL_PURPLE);
-  p1 += drawOfficialArthivaLogoPDF(48, 757, 38);
-  p1 += textAt(96, 786, 14.5, "F2", WHITE, "ARTHIVA MONEY - PERSONAL & HOUSEHOLD FINANCIAL REPORT");
-  p1 += textAt(96, 770, 9.5, "F1", WHITE, `Account Holder: ${user.name || "User"} (${user.householdName || "Personal Household"}) | City: ${user.city || "India"}`);
-  p1 += textAt(96, 755, 8.8, "F1", LAVENDER_SUBTLE, `Period: ${data.periodLabel} | Generated on: ${generatedOn}`);
+  // Header Banner: Royal Purple with White & Muted Text, 18-20mm (54pt) margins
+  p1 += rectFill(MARGIN_LEFT, 726, CONTENT_WIDTH, 62, ROYAL_PURPLE);
+  p1 += drawOfficialArthivaLogoPDF(MARGIN_LEFT + 12, 738, 38);
+  // Title: 16pt, bold
+  p1 += textAt(MARGIN_LEFT + 58, 764, 16, "F2", WHITE, "ARTHIVA MONEY - PERSONAL & HOUSEHOLD FINANCIAL REPORT");
+  // Header details: 9pt, regular, muted gray / subtle lavender
+  p1 += textAt(MARGIN_LEFT + 58, 748, 9, "F1", LAVENDER_SUBTLE,
+    `Account: ${user.name || "User"} (${user.householdName || "Personal Household"}) | City: ${user.city || "India"}`);
+  p1 += textAt(MARGIN_LEFT + 58, 735, 9, "F1", LAVENDER_SUBTLE,
+    `Period: ${data.periodLabel} | Generated: ${generatedOn}`);
 
-  // 1. Summary Tiles on Soft Lavender Tint (#EDE9FE) with Ink Slate (#0F172A) figures
-  p1 += textAt(36, 724, 11, "F2", ROYAL_PURPLE, "1. EXECUTIVE SUMMARY TILES (VS PREVIOUS PAY CYCLE)");
+  // Section 1 Heading: 11pt, bold, 15pt space above, 8pt below
+  p1 += textAt(MARGIN_LEFT, 706, 11, "F2", ROYAL_PURPLE, "1. EXECUTIVE SUMMARY TILES (VS PREVIOUS PAY CYCLE)");
+
+  // 6 Summary Tiles (2 rows of 3)
+  const tileGap = 7;
+  const tileW = Math.floor((CONTENT_WIDTH - 2 * tileGap) / 3); // ~157pt
+  const tileH = 46;
   const tiles = [
-    { label: "TAKE-HOME INCOME", val: formatINR(data.income), delta: "^ +0.0% vs Sep (Stable)", atRisk: false },
-    { label: "TOTAL SPENDING", val: formatINR(data.totalExpenditure), delta: "v -2.0% vs Sep (On track)", atRisk: false },
-    { label: "CYCLE SAVINGS", val: formatINR(data.plannedSavingsAllocation), delta: "^ +Rs. 3,000 vs Sep", atRisk: false },
-    { label: "SAVINGS RATE", val: `${data.savingsRatePct}% of Pay`, delta: "^ +4.0% vs Sep", atRisk: false },
-    { label: "SAFE TO SPEND", val: formatINR(fin.safeToSpend), delta: fin.isShortfall ? "v Rs. 2,400 short (At risk)" : "^ On track to payday", atRisk: !!fin.isShortfall },
-    { label: "ACTIVE EMIs", val: formatINR(emiTotal), delta: "^ Within safe ratio", atRisk: false }
+    { label: "TAKE-HOME INCOME", val: formatINR(data.income), comp: "+0.0% vs Sep", isRisk: false },
+    { label: "TOTAL SPENDING", val: formatINR(data.totalExpenditure), comp: "-2.0% vs Sep", isRisk: false },
+    { label: "CYCLE SAVINGS", val: formatINR(data.plannedSavingsAllocation), comp: "+Rs. 3,000 vs Sep", isRisk: false },
+    { label: "SAVINGS RATE", val: `${data.savingsRatePct}% of Pay`, comp: "+4.0% vs Sep", isRisk: false },
+    { label: "SAFE TO SPEND", val: formatINR(fin.safeToSpend), comp: fin.isShortfall ? "Risk: Shortfall" : "On track to payday", isRisk: !!fin.isShortfall },
+    { label: "ACTIVE EMIS", val: formatINR(emiTotal), comp: "Safe ratio", isRisk: false }
   ];
 
   tiles.forEach((t, idx) => {
     const col = idx % 3;
     const row = Math.floor(idx / 3);
-    const tx = 36 + col * 177;
-    const ty = 664 - row * 56;
+    const tx = MARGIN_LEFT + col * (tileW + tileGap);
+    const ty = 648 - row * (tileH + 8);
 
-    // Tile background is always Soft Lavender Tint (#EDE9FE)
-    p1 += rectFill(tx, ty, 169, 48, LAVENDER_SUBTLE);
-    p1 += rectStroke(tx, ty, 169, 48, t.atRisk ? WARM_AMBER : ROYAL_PURPLE, 0.9);
-    p1 += textAt(tx + 8, ty + 35, 7.5, "F2", INK_SLATE, t.label);
-    p1 += textAt(tx + 8, ty + 20, 12, "F2", INK_SLATE, t.val);
-    if (t.atRisk) {
-      p1 += drawAmberTriangle(tx + 12, ty + 6, 6, WARM_AMBER);
-      p1 += textAt(tx + 20, ty + 7, 7.5, "F2", DARK_AMBER_TEXT, `[At risk] ${t.delta}`);
-    } else {
-      p1 += textAt(tx + 8, ty + 7, 7.5, "F1", INK_SLATE, t.delta);
-    }
+    p1 += rectFill(tx, ty, tileW, tileH, LAVENDER_SUBTLE);
+    p1 += rectStroke(tx, ty, tileW, tileH, t.isRisk ? STATUS_RISK_COLOR : BORDER_SUBTLE, 0.8);
+    // Summary tile labels: 8pt, uppercase, muted gray
+    p1 += textAt(tx + 8, ty + 33, 8, "F2", MUTED_GRAY, t.label);
+    // Summary tile values: 14pt, bold
+    p1 += textAt(tx + 8, ty + 18, 14, "F2", INK_SLATE, t.val);
+    // Comparison text: 8pt, regular
+    p1 += textAt(tx + 8, ty + 6, 8, "F1", t.isRisk ? STATUS_RISK_COLOR : MUTED_GRAY, t.comp);
   });
 
-  // 2. Spending by Category (Royal Purple / Purple Tints for normal series, Warm Amber #D97706 for over-budget / at-risk)
-  p1 += textAt(36, 590, 11, "F2", ROYAL_PURPLE, "2. SPENDING BY CATEGORY (HORIZONTAL BARS & BUDGET STATUS)");
-  let cy = 568;
-  ArthivaState.budgets.forEach((b) => {
-    const actual = ArthivaState.expenses
-      .filter(e => e.category.toLowerCase() === b.category.toLowerCase())
+  // Section 2 Heading: 11pt bold
+  p1 += textAt(MARGIN_LEFT, 576, 11, "F2", ROYAL_PURPLE, "2. SPENDING BY CATEGORY & BUDGET STATUS");
+
+  let cy = 556;
+  const catList = ArthivaState.budgets || [];
+  catList.forEach((b) => {
+    const actual = (ArthivaState.expenses || [])
+      .filter(e => e.category && e.category.toLowerCase() === b.category.toLowerCase())
       .reduce((s, e) => s + Number(e.amount), 0);
     const limit = b.limit || 5000;
     const pct = Math.min(100, Math.round((actual / limit) * 100));
-    const isOver = actual > limit;
-    const cStyle = getPdfCategoryStyle(b.category);
-    const barW = Math.max(6, Math.round((Math.min(actual, 6500) / 6500) * 200));
+    const isRisk = actual > limit;
+    const statusText = isRisk ? "Risk" : "On track";
+    const statusColor = isRisk ? STATUS_RISK_COLOR : STATUS_PAID_COLOR;
 
-    p1 += textAt(36, cy, 8.5, "F2", INK_SLATE, `${cStyle.tag} ${b.category.slice(0, 25)}`);
-    p1 += rectFill(215, cy - 2, 200, 9, LAVENDER_SUBTLE);
-    p1 += rectFill(215, cy - 2, barW, 9, isOver ? WARM_AMBER : cStyle.rgb);
-    p1 += textRight(558, cy, 8.2, "F2", isOver ? DARK_AMBER_TEXT : INK_SLATE,
-      `${formatINR(actual)} / ${formatINR(limit)} (${pct}% | ${isOver ? "At risk" : "On track"})`);
-    cy -= 19;
+    // Full untruncated category name (font 9pt regular)
+    p1 += textAt(MARGIN_LEFT, cy, 9, "F1", INK_SLATE, b.category);
+
+    // Progress bar in center
+    const barX = MARGIN_LEFT + 175;
+    const barWMax = 145;
+    const barW = Math.max(4, Math.round((pct / 100) * barWMax));
+    p1 += rectFill(barX, cy - 2, barWMax, 8, LAVENDER_SUBTLE);
+    p1 += rectFill(barX, cy - 2, barW, 8, isRisk ? STATUS_RISK_COLOR : ROYAL_PURPLE);
+
+    // Right-aligned figures and plain colored status text (no brackets, no bold, no background)
+    const amtStr = `${formatINR(actual)} / ${formatINR(limit)} (${pct}%)`;
+    p1 += textRight(MARGIN_RIGHT - 52, cy, 9, "F1", INK_SLATE, amtStr);
+    p1 += textRight(MARGIN_RIGHT, cy, 9, "F1", statusColor, statusText);
+    cy -= 18;
   });
 
-  // 3. Income vs Outflow & 4. Net Worth Trend
-  p1 += textAt(36, 456, 10.5, "F2", ROYAL_PURPLE, "3. INCOME VS OUTFLOW BY MONTH");
-  p1 += textAt(305, 456, 10.5, "F2", ROYAL_PURPLE, "4. NET WORTH TREND (4 CYCLES)");
+  // Section 3 & 4 Headings
+  p1 += textAt(MARGIN_LEFT, 442, 11, "F2", ROYAL_PURPLE, "3. INCOME VS OUTFLOW BY MONTH");
+  p1 += textAt(MARGIN_LEFT + 250, 442, 11, "F2", ROYAL_PURPLE, "4. NET WORTH TREND (4 CYCLES)");
 
-  p1 += rectFill(36, 345, 250, 102, WHITE);
-  p1 += rectStroke(36, 345, 250, 102, LAVENDER_SUBTLE, 1.0);
+  // Chart 1: Income vs Outflow Bar Chart
+  const chartW = 238;
+  const chartH = 96;
+  p1 += rectFill(MARGIN_LEFT, 336, chartW, chartH, PAGE_SURFACE);
+  p1 += rectStroke(MARGIN_LEFT, 336, chartW, chartH, BORDER_SUBTLE, 0.8);
   const monthsBar = [
     { m: "Jul", inc: 50000, out: 41200 },
     { m: "Aug", inc: 50000, out: 43100 },
@@ -4631,20 +4656,22 @@ function buildMultiPageVectorPDF(fin, data, user) {
     { m: "Oct", inc: data.income || 50000, out: data.totalExpenditure || 0 }
   ];
   monthsBar.forEach((mb, i) => {
-    const bx = 56 + i * 56;
-    const incH = Math.max(4, Math.round((mb.inc / 55000) * 65));
-    const outH = Math.max(4, Math.round((mb.out / 55000) * 65));
-    const isOutAtRisk = mb.out > mb.inc;
-    // Main series: Royal Purple (#7C3AED), extra series: Lighter Purple Tint (#A855F7) or Warm Amber (#D97706) if at risk
-    p1 += rectFill(bx, 362, 16, incH, ROYAL_PURPLE);
-    p1 += rectFill(bx + 18, 362, 16, outH, isOutAtRisk ? WARM_AMBER : PURPLE_TINT_LIGHT);
-    p1 += textAt(bx + 5, 350, 8, "F2", INK_SLATE, mb.m);
-    p1 += textAt(bx - 2, 365 + incH, 6.5, "F1", INK_SLATE, `${Math.round(mb.inc / 1000)}K`);
-    p1 += textAt(bx + 17, 365 + outH, 6.5, "F1", isOutAtRisk ? DARK_AMBER_TEXT : INK_SLATE, `${Math.round(mb.out / 1000)}K`);
+    const bx = MARGIN_LEFT + 22 + i * 54;
+    const incH = Math.max(4, Math.round((mb.inc / 55000) * 58));
+    const outH = Math.max(4, Math.round((mb.out / 55000) * 58));
+    const isOutRisk = mb.out > mb.inc;
+    p1 += rectFill(bx, 350, 15, incH, ROYAL_PURPLE);
+    p1 += rectFill(bx + 16, 350, 15, outH, isOutRisk ? STATUS_RISK_COLOR : LAVENDER_SUBTLE);
+    // Chart labels and axis values: 8pt
+    p1 += textAt(bx + 4, 340, 8, "F1", MUTED_GRAY, mb.m);
+    p1 += textAt(bx - 2, 352 + incH, 8, "F1", MUTED_GRAY, `${Math.round(mb.inc / 1000)}K`);
+    p1 += textAt(bx + 15, 352 + outH, 8, "F1", isOutRisk ? STATUS_RISK_COLOR : MUTED_GRAY, `${Math.round(mb.out / 1000)}K`);
   });
 
-  p1 += rectFill(305, 345, 254, 102, WHITE);
-  p1 += rectStroke(305, 345, 254, 102, LAVENDER_SUBTLE, 1.0);
+  // Chart 2: Net Worth Trend
+  const chart2X = MARGIN_LEFT + 250;
+  p1 += rectFill(chart2X, 336, chartW, chartH, PAGE_SURFACE);
+  p1 += rectStroke(chart2X, 336, chartW, chartH, BORDER_SUBTLE, 0.8);
   const nwSeries = [
     { m: "Jul", val: 78000 },
     { m: "Aug", val: 86500 },
@@ -4652,143 +4679,165 @@ function buildMultiPageVectorPDF(fin, data, user) {
     { m: "Oct", val: netWorth }
   ];
   const nwPts = nwSeries.map((pt, i) => {
-    const x = 332 + i * 64;
-    const y = 364 + Math.max(4, Math.min(68, Math.round(((pt.val - 60000) / 55000) * 62)));
+    const x = chart2X + 28 + i * 62;
+    const y = 352 + Math.max(4, Math.min(60, Math.round(((pt.val - 60000) / 55000) * 56)));
     return { x, y, m: pt.m, val: pt.val };
   });
   for (let i = 0; i < nwPts.length - 1; i++) {
-    p1 += lineSeg(nwPts[i].x, nwPts[i].y, nwPts[i + 1].x, nwPts[i + 1].y, ROYAL_PURPLE, 2.2);
+    p1 += lineSeg(nwPts[i].x, nwPts[i].y, nwPts[i + 1].x, nwPts[i + 1].y, ROYAL_PURPLE, 2.0);
   }
   nwPts.forEach(pt => {
     p1 += rectFill(pt.x - 3, pt.y - 3, 6, 6, ROYAL_PURPLE);
-    p1 += textAt(pt.x - 14, pt.y + 6, 7.5, "F2", INK_SLATE, `Rs.${Math.round(pt.val / 1000)}K`);
-    p1 += textAt(pt.x - 7, 350, 8, "F2", INK_SLATE, pt.m);
+    p1 += textAt(pt.x - 14, pt.y + 6, 8, "F1", INK_SLATE, `Rs.${Math.round(pt.val / 1000)}K`);
+    p1 += textAt(pt.x - 6, 340, 8, "F1", MUTED_GRAY, pt.m);
   });
 
-  // 5. Savings Goals Progress (Blush Pink #EC4899 bars & badges, White bold text inside pink badge, Ink Slate body text)
-  p1 += textAt(36, 324, 11, "F2", ROYAL_PURPLE, "5. SAVINGS GOALS PROGRESS & SECURED MILESTONES");
-  let gy = 300;
+  // Section 5 Heading: 11pt bold
+  p1 += textAt(MARGIN_LEFT, 316, 11, "F2", ROYAL_PURPLE, "5. SAVINGS GOALS PROGRESS & SECURED MILESTONES");
+
+  let gy = 296;
   if (goals.length === 0) {
-    p1 += rectFill(36, gy - 14, 523, 30, LAVENDER_SUBTLE);
-    p1 += textAt(44, gy - 2, 8.5, "F1", INK_SLATE, "No savings goals configured yet.");
+    p1 += rectFill(MARGIN_LEFT, gy - 12, CONTENT_WIDTH, 26, PAGE_SURFACE);
+    p1 += textAt(MARGIN_LEFT + 8, gy - 2, 9, "F1", MUTED_GRAY, "No savings goals configured yet.");
   } else {
     goals.slice(0, 5).forEach(g => {
       const pct = Math.min(100, Math.round(((g.currentSaved || 0) / (g.targetAmount || 1)) * 100));
       const proj = calculateGoalProjection(g.targetAmount || 1, g.currentSaved || 0, g.monthlyAllocation || 0, g.targetDate);
-      const fillW = Math.max(8, Math.round((pct / 100) * 210));
-      const isAtRiskGoal = proj.statusLabel === "At Risk" || proj.statusLabel === "Needs Adjustment";
+      const isRiskGoal = proj.statusLabel === "At Risk" || proj.statusLabel === "Needs Adjustment";
+      const goalStatusText = isRiskGoal ? "Risk" : "On track";
+      const goalStatusColor = isRiskGoal ? STATUS_RISK_COLOR : STATUS_PAID_COLOR;
 
-      p1 += rectFill(36, gy - 14, 523, 32, WHITE);
-      p1 += rectStroke(36, gy - 14, 523, 32, LAVENDER_SUBTLE, 0.9);
-      p1 += textAt(44, gy + 5, 9, "F2", INK_SLATE, `${g.title}`);
-      // Blush Pink badge with White Bold text
-      p1 += rectFill(190, gy + 2, 54, 12, BLUSH_PINK);
-      p1 += textAt(195, gy + 5, 7, "F2", WHITE, "GOAL BAR");
+      p1 += rectFill(MARGIN_LEFT, gy - 14, CONTENT_WIDTH, 32, PAGE_SURFACE);
+      p1 += rectStroke(MARGIN_LEFT, gy - 14, CONTENT_WIDTH, 32, BORDER_SUBTLE, 0.8);
 
-      p1 += textAt(44, gy - 8, 8, "F1", INK_SLATE, `Saved: ${formatINR(g.currentSaved)} of ${formatINR(g.targetAmount)} | Target: ${proj.plannedMonthStr}`);
-      p1 += rectFill(265, gy - 4, 210, 10, LAVENDER_SUBTLE);
-      // Blush Pink (#EC4899) progress bar for goals (or Warm Amber if at risk)
-      p1 += rectFill(265, gy - 4, fillW, 10, isAtRiskGoal ? WARM_AMBER : BLUSH_PINK);
-      p1 += textRight(552, gy + 5, 8, "F2", isAtRiskGoal ? DARK_AMBER_TEXT : INK_SLATE, `${pct}% (${isAtRiskGoal ? "At risk" : "On track"})`);
-      gy -= 38;
+      // Goal Title: 9pt bold
+      p1 += textAt(MARGIN_LEFT + 8, gy + 4, 9, "F2", INK_SLATE, g.title || "Goal");
+      // Goal Subtitle: 8pt regular muted gray
+      p1 += textAt(MARGIN_LEFT + 8, gy - 8, 8, "F1", MUTED_GRAY,
+        `Saved: ${formatINR(g.currentSaved)} of ${formatINR(g.targetAmount)} | Target: ${proj.plannedMonthStr}`);
+
+      // Progress bar
+      const gBarX = MARGIN_LEFT + 220;
+      const gBarWMax = 180;
+      const gBarW = Math.max(6, Math.round((pct / 100) * gBarWMax));
+      p1 += rectFill(gBarX, gy - 4, gBarWMax, 8, LAVENDER_SUBTLE);
+      p1 += rectFill(gBarX, gy - 4, gBarW, 8, isRiskGoal ? STATUS_RISK_COLOR : ROYAL_PURPLE);
+
+      // Percentage and Status label: 9pt regular plain colored text
+      p1 += textRight(MARGIN_RIGHT - 46, gy + 4, 9, "F1", INK_SLATE, `${pct}%`);
+      p1 += textRight(MARGIN_RIGHT - 8, gy + 4, 9, "F1", goalStatusColor, goalStatusText);
+
+      gy -= 36;
     });
   }
 
-  p1 += lineSeg(36, 48, 559, 48, LAVENDER_SUBTLE, 1.0);
-  p1 += textAt(36, 34, 8, "F1", INK_SLATE, "Arthiva Money - Plan today, a brighter tomorrow");
-  p1 += textRight(559, 34, 8.5, "F2", INK_SLATE, "Page 1 of 2");
+  // Footer Page 1: 8pt, muted gray, 18-20mm (54pt) bottom margin
+  p1 += lineSeg(MARGIN_LEFT, 50, MARGIN_RIGHT, 50, BORDER_SUBTLE, 0.8);
+  p1 += textAt(MARGIN_LEFT, 36, 8, "F1", MUTED_GRAY, "Arthiva Money - Plan today, a brighter tomorrow");
+  p1 += textRight(MARGIN_RIGHT, 36, 8, "F1", MUTED_GRAY, "Page 1 of 2");
 
   // =========================================================================
-  // PAGE 2: ROYAL PURPLE HEADER, LAVENDER TABLE HEADERS, MINT PAID & AMBER AT-RISK BADGES
+  // PAGE 2: COMMITMENTS & BILLS SCHEDULE & OUTFLOW LEDGER
   // =========================================================================
   let p2 = "";
-  // Full page background surface (#FAF8FD)
-  p2 += rectFill(0, 0, 595, 842, PAGE_SURFACE);
+  p2 += rectFill(0, 0, 595, 842, WHITE);
 
-  // Royal Purple Header Bar on Page 2
-  p2 += rectFill(36, 766, 523, 44, ROYAL_PURPLE);
-  p2 += drawOfficialArthivaLogoPDF(46, 773, 30);
-  p2 += textAt(84, 792, 11.5, "F2", WHITE, "ARTHIVA MONEY - COMMITMENTS, TRANSACTIONS & AUDIT LEDGER");
-  p2 += textAt(84, 778, 8.5, "F1", LAVENDER_SUBTLE, `Account Holder: ${user.name || "User"} | Period: ${data.periodLabel}`);
+  // Header Banner Page 2
+  p2 += rectFill(MARGIN_LEFT, 746, CONTENT_WIDTH, 42, ROYAL_PURPLE);
+  p2 += drawOfficialArthivaLogoPDF(MARGIN_LEFT + 10, 752, 30);
+  p2 += textAt(MARGIN_LEFT + 48, 771, 12, "F2", WHITE, "ARTHIVA MONEY - COMMITMENTS, TRANSACTIONS & AUDIT LEDGER");
+  p2 += textAt(MARGIN_LEFT + 48, 756, 9, "F1", LAVENDER_SUBTLE, `Account: ${user.name || "User"} | Period: ${data.periodLabel}`);
 
-  // 6. Commitments & Bills Table (Lavender #EDE9FE header row, Ink Slate #0F172A text)
-  p2 += textAt(36, 748, 11, "F2", ROYAL_PURPLE, "6. COMMITMENTS & BILLS SCHEDULE");
-  p2 += rectFill(36, 726, 523, 18, LAVENDER_SUBTLE);
-  p2 += rectStroke(36, 726, 523, 18, ROYAL_PURPLE, 0.6);
-  p2 += textAt(42, 732, 8.5, "F2", INK_SLATE, "COMMITMENT TITLE");
-  p2 += textAt(205, 732, 8.5, "F2", INK_SLATE, "CATEGORY");
-  p2 += textAt(335, 732, 8.5, "F2", INK_SLATE, "DUE DATE");
-  p2 += textAt(400, 732, 8.5, "F2", INK_SLATE, "STATUS BADGE");
-  p2 += textRight(553, 732, 8.5, "F2", INK_SLATE, "AMOUNT (INR)");
+  // Section 6 Heading: 11pt bold, 14-16pt space above, 8pt below
+  p2 += textAt(MARGIN_LEFT, 726, 11, "F2", ROYAL_PURPLE, "6. COMMITMENTS & BILLS SCHEDULE");
 
-  let ty1 = 708;
-  ArthivaState.commitments.forEach((c, idx) => {
+  // Table 1 Column Headers: 8.5pt, bold, uppercase, muted gray
+  p2 += rectFill(MARGIN_LEFT, 704, CONTENT_WIDTH, 18, LAVENDER_SUBTLE);
+  p2 += rectStroke(MARGIN_LEFT, 704, CONTENT_WIDTH, 18, BORDER_SUBTLE, 0.8);
+  p2 += textAt(MARGIN_LEFT + 6, 710, 8.5, "F2", MUTED_GRAY, "COMMITMENT TITLE");
+  p2 += textAt(MARGIN_LEFT + 180, 710, 8.5, "F2", MUTED_GRAY, "CATEGORY");
+  p2 += textAt(MARGIN_LEFT + 310, 710, 8.5, "F2", MUTED_GRAY, "DUE DATE");
+  p2 += textAt(MARGIN_LEFT + 380, 710, 8.5, "F2", MUTED_GRAY, "STATUS");
+  p2 += textRight(MARGIN_RIGHT - 6, 710, 8.5, "F2", MUTED_GRAY, "AMOUNT (INR)");
+
+  let ty1 = 686;
+  const commitments = ArthivaState.commitments || [];
+  commitments.forEach((c, idx) => {
     const timing = classifyBillTiming(c, fin.cycleCtx);
     const isPaid = c.status === "paid";
     const isOverdueOrRisk = !isPaid && (c.isAtRisk || isBillOverdue(c, fin.cycleCtx));
 
-    // Alternating White (#FFFFFF) / Soft Lavender White (#FAF8FD) rows; Paid rows can also show subtle Mint tint
-    const rowBg = isPaid ? MINT_GREEN_TINT : (idx % 2 === 0 ? WHITE : PAGE_SURFACE);
-    p2 += rectFill(36, ty1, 523, 18, rowBg);
-    p2 += rectStroke(36, ty1, 523, 18, LAVENDER_SUBTLE, 0.5);
-
-    const cStyle = getPdfCategoryStyle(c.category);
-    p2 += textAt(42, ty1 + 5, 8, "F2", INK_SLATE, (c.name || "").slice(0, 28));
-    p2 += textAt(205, ty1 + 5, 8, "F1", INK_SLATE, `${cStyle.tag} ${(c.category || "").slice(0, 18)}`);
-    p2 += textAt(335, ty1 + 5, 8, "F1", INK_SLATE, c.dueDateFormatted || c.dueDate || "-");
-
-    // Status Badges with explicit text labels ("Paid", "At risk", "Due") so report reads cleanly in B&W print
+    // Status: only Paid, Due, Risk, Scheduled
+    let statusLabel = "Scheduled";
+    let statusColor = STATUS_SCHEDULED_COLOR;
     if (isPaid) {
-      p2 += rectFill(400, ty1 + 3, 52, 12, MINT_GREEN_TINT);
-      p2 += rectStroke(400, ty1 + 3, 52, 12, DARK_GREEN_TEXT, 0.5);
-      p2 += textAt(406, ty1 + 6, 7.5, "F2", DARK_GREEN_TEXT, "Paid");
+      statusLabel = "Paid";
+      statusColor = STATUS_PAID_COLOR;
     } else if (isOverdueOrRisk) {
-      p2 += rectFill(400, ty1 + 3, 62, 12, WARM_AMBER);
-      p2 += textAt(406, ty1 + 6, 7.5, "F2", INK_SLATE, "! At risk");
-    } else {
-      p2 += rectFill(400, ty1 + 3, 56, 12, LAVENDER_SUBTLE);
-      p2 += textAt(406, ty1 + 6, 7.5, "F2", INK_SLATE, timing === "before_payday" ? "Due" : "Scheduled");
+      statusLabel = "Risk";
+      statusColor = STATUS_RISK_COLOR;
+    } else if (timing === "before_payday") {
+      statusLabel = "Due";
+      statusColor = STATUS_DUE_COLOR;
     }
 
-    // All numeric body text uses Ink Slate (#0F172A) or Dark Amber (#B45309) for at-risk — NEVER RED
-    p2 += textRight(553, ty1 + 5, 8.5, "F2", isOverdueOrRisk ? DARK_AMBER_TEXT : INK_SLATE, formatINR(c.amount));
+    const rowBg = idx % 2 === 0 ? WHITE : PAGE_SURFACE;
+    p2 += rectFill(MARGIN_LEFT, ty1, CONTENT_WIDTH, 18, rowBg);
+    p2 += rectStroke(MARGIN_LEFT, ty1, CONTENT_WIDTH, 18, BORDER_SUBTLE, 0.4);
+
+    // Body text & amounts: 9pt regular, no truncation of category/title
+    p2 += textAt(MARGIN_LEFT + 6, ty1 + 5, 9, "F1", INK_SLATE, c.name || "");
+    p2 += textAt(MARGIN_LEFT + 180, ty1 + 5, 9, "F1", INK_SLATE, c.category || "");
+    p2 += textAt(MARGIN_LEFT + 310, ty1 + 5, 9, "F1", INK_SLATE, c.dueDateFormatted || c.dueDate || "-");
+
+    // Status: plain colored text, no black box, no background, no bold, no symbol prefix
+    p2 += textAt(MARGIN_LEFT + 380, ty1 + 5, 9, "F1", statusColor, statusLabel);
+
+    // Amount: right-aligned, 9pt regular
+    p2 += textRight(MARGIN_RIGHT - 6, ty1 + 5, 9, "F1", INK_SLATE, formatINR(c.amount));
     ty1 -= 18;
   });
 
+  // Section 7 Heading: 11pt bold
   const t2HeaderY = ty1 - 16;
-  p2 += textAt(36, t2HeaderY + 18, 11, "F2", ROYAL_PURPLE, "7. RECORDED FLEXIBLE EXPENSES & CASH-FLOW OUTFLOWS");
-  p2 += rectFill(36, t2HeaderY - 4, 523, 18, LAVENDER_SUBTLE);
-  p2 += rectStroke(36, t2HeaderY - 4, 523, 18, ROYAL_PURPLE, 0.6);
-  p2 += textAt(42, t2HeaderY + 2, 8.5, "F2", INK_SLATE, "MERCHANT / DESCRIPTION");
-  p2 += textAt(210, t2HeaderY + 2, 8.5, "F2", INK_SLATE, "CATEGORY");
-  p2 += textAt(365, t2HeaderY + 2, 8.5, "F2", INK_SLATE, "DATE & CHANNEL");
-  p2 += textRight(553, t2HeaderY + 2, 8.5, "F2", INK_SLATE, "OUTFLOW (INR)");
+  p2 += textAt(MARGIN_LEFT, t2HeaderY + 16, 11, "F2", ROYAL_PURPLE, "7. RECORDED FLEXIBLE EXPENSES & CASH-FLOW OUTFLOWS");
+
+  // Table 2 Column Headers: 8.5pt, bold, uppercase, muted gray
+  p2 += rectFill(MARGIN_LEFT, t2HeaderY - 4, CONTENT_WIDTH, 18, LAVENDER_SUBTLE);
+  p2 += rectStroke(MARGIN_LEFT, t2HeaderY - 4, CONTENT_WIDTH, 18, BORDER_SUBTLE, 0.8);
+  p2 += textAt(MARGIN_LEFT + 6, t2HeaderY + 2, 8.5, "F2", MUTED_GRAY, "MERCHANT / DESCRIPTION");
+  p2 += textAt(MARGIN_LEFT + 180, t2HeaderY + 2, 8.5, "F2", MUTED_GRAY, "CATEGORY");
+  p2 += textAt(MARGIN_LEFT + 340, t2HeaderY + 2, 8.5, "F2", MUTED_GRAY, "DATE & CHANNEL");
+  p2 += textRight(MARGIN_RIGHT - 6, t2HeaderY + 2, 8.5, "F2", MUTED_GRAY, "OUTFLOW (INR)");
 
   let ty2 = t2HeaderY - 22;
-  ArthivaState.expenses.slice(0, 12).forEach((e, idx) => {
-    const zebraRgb = idx % 2 === 0 ? WHITE : PAGE_SURFACE;
-    p2 += rectFill(36, ty2, 523, 18, zebraRgb);
-    p2 += rectStroke(36, ty2, 523, 18, LAVENDER_SUBTLE, 0.5);
-    const cStyle = getPdfCategoryStyle(e.category);
+  const expenseList = (ArthivaState.expenses || []).slice(0, 12);
+  expenseList.forEach((e, idx) => {
+    const rowBg = idx % 2 === 0 ? WHITE : PAGE_SURFACE;
+    p2 += rectFill(MARGIN_LEFT, ty2, CONTENT_WIDTH, 18, rowBg);
+    p2 += rectStroke(MARGIN_LEFT, ty2, CONTENT_WIDTH, 18, BORDER_SUBTLE, 0.4);
 
-    p2 += textAt(42, ty2 + 5, 8, "F2", INK_SLATE, (e.merchant || "Direct Purchase").slice(0, 28));
-    p2 += textAt(210, ty2 + 5, 8, "F1", INK_SLATE, `${cStyle.tag} ${(e.category || "").slice(0, 20)}`);
-    p2 += textAt(365, ty2 + 5, 8, "F1", INK_SLATE, `${formatDateDisplay(e.date)} (${e.source || "Manual"})`);
-    p2 += textRight(553, ty2 + 5, 8.5, "F2", INK_SLATE, formatINR(e.amount));
+    // Full name without category abbreviation tag, 9pt regular
+    p2 += textAt(MARGIN_LEFT + 6, ty2 + 5, 9, "F1", INK_SLATE, e.merchant || "Direct Purchase");
+    p2 += textAt(MARGIN_LEFT + 180, ty2 + 5, 9, "F1", INK_SLATE, e.category || "");
+    p2 += textAt(MARGIN_LEFT + 340, ty2 + 5, 9, "F1", INK_SLATE, `${formatDateDisplay(e.date)} (${e.source || "Manual"})`);
+    p2 += textRight(MARGIN_RIGHT - 6, ty2 + 5, 9, "F1", INK_SLATE, formatINR(e.amount));
     ty2 -= 18;
   });
 
-  const boxY = Math.max(70, ty2 - 42);
-  p2 += rectFill(36, boxY, 523, 38, LAVENDER_SUBTLE);
-  p2 += rectStroke(36, boxY, 523, 38, ROYAL_PURPLE, 1.2);
-  p2 += textAt(46, boxY + 22, 9.5, "F2", INK_SLATE,
+  // Safe to Spend Summary Box
+  const boxY = Math.max(68, ty2 - 38);
+  p2 += rectFill(MARGIN_LEFT, boxY, CONTENT_WIDTH, 36, LAVENDER_SUBTLE);
+  p2 += rectStroke(MARGIN_LEFT, boxY, CONTENT_WIDTH, 36, ROYAL_PURPLE, 1.0);
+  p2 += textAt(MARGIN_LEFT + 10, boxY + 21, 9, "F2", INK_SLATE,
     `SAFE TO SPEND SUMMARY: Balance ${formatINR(fin.currentBalance)} | Bills ${formatINR(fin.billsBeforePayday)} | Goals ${formatINR(fin.savingsToSetAside)} | Safe to spend: ${formatINR(fin.safeToSpend)}`);
-  p2 += textAt(46, boxY + 8, 8.5, "F1", INK_SLATE,
+  p2 += textAt(MARGIN_LEFT + 10, boxY + 8, 8.5, "F1", INK_SLATE,
     `Daily Safe Allowance: ${formatINR(fin.dailyRate)}/day for ${fin.daysLeft} remaining days until next payday (${fin.cycleCtx.endStr}).`);
 
-  p2 += lineSeg(36, 48, 559, 48, LAVENDER_SUBTLE, 1.0);
-  p2 += textAt(36, 34, 8, "F1", INK_SLATE, "Arthiva Money - Confidential Personal & Household Financial Statement");
-  p2 += textRight(559, 34, 8.5, "F2", INK_SLATE, "Page 2 of 2");
+  // Footer Page 2: 8pt muted gray
+  p2 += lineSeg(MARGIN_LEFT, 50, MARGIN_RIGHT, 50, BORDER_SUBTLE, 0.8);
+  p2 += textAt(MARGIN_LEFT, 36, 8, "F1", MUTED_GRAY, "Arthiva Money - Confidential Personal & Household Financial Statement");
+  p2 += textRight(MARGIN_RIGHT, 36, 8, "F1", MUTED_GRAY, "Page 2 of 2");
 
   const objects = [
     "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
