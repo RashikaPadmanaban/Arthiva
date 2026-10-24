@@ -2536,9 +2536,7 @@ function renderProfileScreen() {
   // Item 8.1: Dev/QA Reset button visibility guarded by window.ARTHIVA_ENV !== "production"
   const isProd = window.ARTHIVA_ENV === "production";
   const qaTopBtn = document.getElementById("qa-reset-new-user-btn");
-  const qaSettingsCard = document.getElementById("settings-qa-reset-card");
   if (qaTopBtn) qaTopBtn.style.display = isProd ? "none" : "inline-flex";
-  if (qaSettingsCard) qaSettingsCard.style.display = isProd ? "none" : "block";
 
   // Security Summary on Profile
   const secSummary = document.getElementById("profile-security-summary");
@@ -4846,10 +4844,10 @@ function triggerBinaryPdfDownloadOnly() {
  */
 function exportDataPDF(btnEl) {
   const btn = btnEl || document.getElementById("btn-export-pdf");
-  const originalText = btn ? btn.textContent : "Export PDF";
+  const originalHTML = btn ? btn.innerHTML : "<span>Export PDF</span>";
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "Preparing PDF…";
+    btn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="spin-icon"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>Preparing PDF…</span>`;
   }
 
   setTimeout(() => {
@@ -4857,13 +4855,13 @@ function exportDataPDF(btnEl) {
       triggerBinaryPdfDownloadOnly();
       if (btn) {
         btn.disabled = false;
-        btn.textContent = originalText;
+        btn.innerHTML = originalHTML;
       }
       showToast("PDF downloaded");
     } catch (err) {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = originalText;
+        btn.innerHTML = originalHTML;
       }
       showToast("Could not generate PDF. Tap Export PDF to retry.");
     }
@@ -7964,9 +7962,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Hide Dev/QA Reset buttons if running in production mode
   if (window.ARTHIVA_ENV === "production") {
     const qaBtn = document.getElementById("qa-reset-new-user-btn");
-    const qaCard = document.getElementById("settings-qa-reset-card");
     if (qaBtn) qaBtn.style.display = "none";
-    if (qaCard) qaCard.style.display = "none";
   }
 
   // Support URL parameter ?reset=new-user for automated E2E / QA runs
