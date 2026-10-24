@@ -4746,14 +4746,14 @@ function buildMultiPageVectorPDF(fin, data, user) {
   // Section 6 Heading: 11pt bold, 14-16pt space above, 8pt below
   p2 += textAt(MARGIN_LEFT, 726, 11, "F2", ROYAL_PURPLE, "6. COMMITMENTS & BILLS SCHEDULE");
 
-  // Table 1 Column Headers: 8.5pt, bold, uppercase, muted gray
+  // Table 1 Column Headers: 8pt, bold, uppercase, muted gray. Perfectly aligned with rows inside table boundary.
   p2 += rectFill(MARGIN_LEFT, 704, CONTENT_WIDTH, 18, LAVENDER_SUBTLE);
   p2 += rectStroke(MARGIN_LEFT, 704, CONTENT_WIDTH, 18, BORDER_SUBTLE, 0.8);
-  p2 += textAt(MARGIN_LEFT + 6, 710, 8.5, "F2", MUTED_GRAY, "COMMITMENT TITLE");
-  p2 += textAt(MARGIN_LEFT + 180, 710, 8.5, "F2", MUTED_GRAY, "CATEGORY");
-  p2 += textAt(MARGIN_LEFT + 310, 710, 8.5, "F2", MUTED_GRAY, "DUE DATE");
-  p2 += textAt(MARGIN_LEFT + 380, 710, 8.5, "F2", MUTED_GRAY, "STATUS");
-  p2 += textRight(MARGIN_RIGHT - 6, 710, 8.5, "F2", MUTED_GRAY, "AMOUNT (INR)");
+  p2 += textAt(MARGIN_LEFT + 6, 710, 8, "F2", MUTED_GRAY, "COMMITMENT TITLE");
+  p2 += textAt(MARGIN_LEFT + 172, 710, 8, "F2", MUTED_GRAY, "CATEGORY");
+  p2 += textAt(MARGIN_LEFT + 296, 710, 8, "F2", MUTED_GRAY, "DUE DATE");
+  p2 += textAt(MARGIN_LEFT + 364, 710, 8, "F2", MUTED_GRAY, "STATUS");
+  p2 += textRight(MARGIN_RIGHT - 10, 710, 8, "F2", MUTED_GRAY, "AMOUNT (INR)");
 
   let ty1 = 686;
   const commitments = ArthivaState.commitments || [];
@@ -4780,16 +4780,16 @@ function buildMultiPageVectorPDF(fin, data, user) {
     p2 += rectFill(MARGIN_LEFT, ty1, CONTENT_WIDTH, 18, rowBg);
     p2 += rectStroke(MARGIN_LEFT, ty1, CONTENT_WIDTH, 18, BORDER_SUBTLE, 0.4);
 
-    // Body text & amounts: 9pt regular, no truncation of category/title
-    p2 += textAt(MARGIN_LEFT + 6, ty1 + 5, 9, "F1", INK_SLATE, c.name || "");
-    p2 += textAt(MARGIN_LEFT + 180, ty1 + 5, 9, "F1", INK_SLATE, c.category || "");
-    p2 += textAt(MARGIN_LEFT + 310, ty1 + 5, 9, "F1", INK_SLATE, c.dueDateFormatted || c.dueDate || "-");
+    // Body text: 8pt regular, perfectly fitting and aligned within columns
+    p2 += textAt(MARGIN_LEFT + 6, ty1 + 5, 8, "F1", INK_SLATE, c.name || "");
+    p2 += textAt(MARGIN_LEFT + 172, ty1 + 5, 8, "F1", INK_SLATE, c.category || "");
+    p2 += textAt(MARGIN_LEFT + 296, ty1 + 5, 8, "F1", INK_SLATE, c.dueDateFormatted || c.dueDate || "-");
 
-    // Status: plain colored text, no black box, no background, no bold, no symbol prefix
-    p2 += textAt(MARGIN_LEFT + 380, ty1 + 5, 9, "F1", statusColor, statusLabel);
+    // Status: 8pt plain colored text, no black box, no background, no bold, no symbol prefix
+    p2 += textAt(MARGIN_LEFT + 364, ty1 + 5, 8, "F1", statusColor, statusLabel);
 
-    // Amount: right-aligned, 9pt regular
-    p2 += textRight(MARGIN_RIGHT - 6, ty1 + 5, 9, "F1", INK_SLATE, formatINR(c.amount));
+    // Amount: right-aligned inside table with comfortable right padding (MARGIN_RIGHT - 10)
+    p2 += textRight(MARGIN_RIGHT - 10, ty1 + 5, 8, "F1", INK_SLATE, formatINR(c.amount));
     ty1 -= 18;
   });
 
@@ -4797,13 +4797,13 @@ function buildMultiPageVectorPDF(fin, data, user) {
   const t2HeaderY = ty1 - 16;
   p2 += textAt(MARGIN_LEFT, t2HeaderY + 16, 11, "F2", ROYAL_PURPLE, "7. RECORDED FLEXIBLE EXPENSES & CASH-FLOW OUTFLOWS");
 
-  // Table 2 Column Headers: 8.5pt, bold, uppercase, muted gray
+  // Table 2 Column Headers: 8pt, bold, uppercase, muted gray
   p2 += rectFill(MARGIN_LEFT, t2HeaderY - 4, CONTENT_WIDTH, 18, LAVENDER_SUBTLE);
   p2 += rectStroke(MARGIN_LEFT, t2HeaderY - 4, CONTENT_WIDTH, 18, BORDER_SUBTLE, 0.8);
-  p2 += textAt(MARGIN_LEFT + 6, t2HeaderY + 2, 8.5, "F2", MUTED_GRAY, "MERCHANT / DESCRIPTION");
-  p2 += textAt(MARGIN_LEFT + 180, t2HeaderY + 2, 8.5, "F2", MUTED_GRAY, "CATEGORY");
-  p2 += textAt(MARGIN_LEFT + 340, t2HeaderY + 2, 8.5, "F2", MUTED_GRAY, "DATE & CHANNEL");
-  p2 += textRight(MARGIN_RIGHT - 6, t2HeaderY + 2, 8.5, "F2", MUTED_GRAY, "OUTFLOW (INR)");
+  p2 += textAt(MARGIN_LEFT + 6, t2HeaderY + 2, 8, "F2", MUTED_GRAY, "MERCHANT / DESCRIPTION");
+  p2 += textAt(MARGIN_LEFT + 172, t2HeaderY + 2, 8, "F2", MUTED_GRAY, "CATEGORY");
+  p2 += textAt(MARGIN_LEFT + 316, t2HeaderY + 2, 8, "F2", MUTED_GRAY, "DATE & CHANNEL");
+  p2 += textRight(MARGIN_RIGHT - 10, t2HeaderY + 2, 8, "F2", MUTED_GRAY, "OUTFLOW (INR)");
 
   let ty2 = t2HeaderY - 22;
   const expenseList = (ArthivaState.expenses || []).slice(0, 12);
@@ -4812,11 +4812,11 @@ function buildMultiPageVectorPDF(fin, data, user) {
     p2 += rectFill(MARGIN_LEFT, ty2, CONTENT_WIDTH, 18, rowBg);
     p2 += rectStroke(MARGIN_LEFT, ty2, CONTENT_WIDTH, 18, BORDER_SUBTLE, 0.4);
 
-    // Full name without category abbreviation tag, 9pt regular
-    p2 += textAt(MARGIN_LEFT + 6, ty2 + 5, 9, "F1", INK_SLATE, e.merchant || "Direct Purchase");
-    p2 += textAt(MARGIN_LEFT + 180, ty2 + 5, 9, "F1", INK_SLATE, e.category || "");
-    p2 += textAt(MARGIN_LEFT + 340, ty2 + 5, 9, "F1", INK_SLATE, `${formatDateDisplay(e.date)} (${e.source || "Manual"})`);
-    p2 += textRight(MARGIN_RIGHT - 6, ty2 + 5, 9, "F1", INK_SLATE, formatINR(e.amount));
+    // Body text: 8pt regular, safely padded within table border
+    p2 += textAt(MARGIN_LEFT + 6, ty2 + 5, 8, "F1", INK_SLATE, e.merchant || "Direct Purchase");
+    p2 += textAt(MARGIN_LEFT + 172, ty2 + 5, 8, "F1", INK_SLATE, e.category || "");
+    p2 += textAt(MARGIN_LEFT + 316, ty2 + 5, 8, "F1", INK_SLATE, `${formatDateDisplay(e.date)} (${e.source || "Manual"})`);
+    p2 += textRight(MARGIN_RIGHT - 10, ty2 + 5, 8, "F1", INK_SLATE, formatINR(e.amount));
     ty2 -= 18;
   });
 
