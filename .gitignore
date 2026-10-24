@@ -5,6 +5,13 @@
 credentials.json
 secrets/
 
+# Dependencies & Build artifacts
+node_modules/
+www/
+android/app/build/
+android/.gradle/
+android/build/
+
 # OS / Editor files
 .DS_Store
 Thumbs.db

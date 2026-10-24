@@ -1,0 +1,14 @@
+{
+  "name": "arthiva-money",
+  "version": "1.0.0",
+  "description": "Arthiva Money - Personal & Household Financial Tracking",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Static build ready'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  }
+}
