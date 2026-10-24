@@ -4565,19 +4565,14 @@ function buildMultiPageVectorPDF(fin, data, user) {
   let p1 = "";
   p1 += rectFill(0, 0, 595, 842, WHITE);
 
-  // Header Banner: Royal Purple with White & Muted Text, 18-20mm (54pt) margins
-  p1 += rectFill(MARGIN_LEFT, 726, CONTENT_WIDTH, 62, ROYAL_PURPLE);
-  p1 += drawOfficialArthivaLogoPDF(MARGIN_LEFT + 12, 738, 38);
-  // Title: 16pt, bold
-  p1 += textAt(MARGIN_LEFT + 58, 764, 16, "F2", WHITE, "ARTHIVA MONEY - PERSONAL & HOUSEHOLD FINANCIAL REPORT");
-  // Header details: 9pt, regular, muted gray / subtle lavender
-  p1 += textAt(MARGIN_LEFT + 58, 748, 9, "F1", LAVENDER_SUBTLE,
-    `Account: ${user.name || "User"} (${user.householdName || "Personal Household"}) | City: ${user.city || "India"}`);
-  p1 += textAt(MARGIN_LEFT + 58, 735, 9, "F1", LAVENDER_SUBTLE,
-    `Period: ${data.periodLabel} | Generated: ${generatedOn}`);
+  // Header Banner Page 1: Exact layout, height, and logo-text alignment matching Page 2
+  p1 += rectFill(MARGIN_LEFT, 746, CONTENT_WIDTH, 42, ROYAL_PURPLE);
+  p1 += drawOfficialArthivaLogoPDF(MARGIN_LEFT + 10, 752, 30);
+  p1 += textAt(MARGIN_LEFT + 48, 771, 12, "F2", WHITE, "ARTHIVA MONEY - PERSONAL & HOUSEHOLD FINANCIAL REPORT");
+  p1 += textAt(MARGIN_LEFT + 48, 756, 9, "F1", LAVENDER_SUBTLE, `Account: ${user.name || "User"} | Period: ${data.periodLabel}`);
 
   // Section 1 Heading: 11pt, bold, 15pt space above, 8pt below
-  p1 += textAt(MARGIN_LEFT, 706, 11, "F2", ROYAL_PURPLE, "1. EXECUTIVE SUMMARY TILES (VS PREVIOUS PAY CYCLE)");
+  p1 += textAt(MARGIN_LEFT, 726, 11, "F2", ROYAL_PURPLE, "1. EXECUTIVE SUMMARY TILES (VS PREVIOUS PAY CYCLE)");
 
   // 6 Summary Tiles (2 rows of 3)
   const tileGap = 7;
@@ -4596,7 +4591,7 @@ function buildMultiPageVectorPDF(fin, data, user) {
     const col = idx % 3;
     const row = Math.floor(idx / 3);
     const tx = MARGIN_LEFT + col * (tileW + tileGap);
-    const ty = 648 - row * (tileH + 8);
+    const ty = 668 - row * (tileH + 8);
 
     p1 += rectFill(tx, ty, tileW, tileH, LAVENDER_SUBTLE);
     p1 += rectStroke(tx, ty, tileW, tileH, t.isRisk ? STATUS_RISK_COLOR : BORDER_SUBTLE, 0.8);
