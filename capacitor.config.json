@@ -1,0 +1,6 @@
+{
+  "appId": "com.arthiva.money",
+  "appName": "Arthiva Money",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}

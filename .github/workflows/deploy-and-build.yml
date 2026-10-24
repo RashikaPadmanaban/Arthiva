@@ -1,4 +1,4 @@
-name: Deploy to Vercel and Build Android APK
+name: Build Android APK
 
 on:
   push:
@@ -7,36 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # =========================================================================
-  # 1. DEPLOY TO VERCEL (Optional if GitHub Vercel integration is enabled)
-  # =========================================================================
-  deploy-vercel:
-    name: Deploy to Vercel
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Deploy to Vercel
-        if: ${{ env.VERCEL_TOKEN != '' }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          npm install --global vercel
-          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-          vercel build --prod --token=$VERCEL_TOKEN
-          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
-
-  # =========================================================================
-  # 2. BUILD ANDROID APK VIA CAPACITOR
-  # =========================================================================
   build-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
@@ -48,6 +18,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -55,24 +26,25 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install dependencies
         run: |
           npm install
 
-      - name: Prepare web assets folder
+      - name: Prepare web assets
         run: |
           mkdir -p www
           cp -r index.html style.css app.js supabase.js manifest.json design-system.html www/ 2>/dev/null || true
 
-      - name: Initialize and Sync Capacitor Android
+      - name: Turn off Capacitor Telemetry
+        run: |
+          npx cap telemetry off
+
+      - name: Add Android platform and sync
         run: |
           npx cap add android || true
           npx cap sync android
 
-      - name: Build Debug APK
+      - name: Build Debug APK with Gradle
         run: |
           cd android
           chmod +x gradlew
