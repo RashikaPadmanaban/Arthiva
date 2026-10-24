@@ -4618,20 +4618,20 @@ function buildMultiPageVectorPDF(fin, data, user) {
     const statusText = isRisk ? "Risk" : "On track";
     const statusColor = isRisk ? STATUS_RISK_COLOR : STATUS_PAID_COLOR;
 
-    // Full untruncated category name (font 9pt regular)
-    p1 += textAt(MARGIN_LEFT, cy, 9, "F1", INK_SLATE, b.category);
+    // Full untruncated category name (font 8.5pt regular)
+    p1 += textAt(MARGIN_LEFT, cy, 8.5, "F1", INK_SLATE, b.category);
 
     // Progress bar in center
-    const barX = MARGIN_LEFT + 175;
-    const barWMax = 145;
+    const barX = MARGIN_LEFT + 155;
+    const barWMax = 115;
     const barW = Math.max(4, Math.round((pct / 100) * barWMax));
-    p1 += rectFill(barX, cy - 2, barWMax, 8, LAVENDER_SUBTLE);
-    p1 += rectFill(barX, cy - 2, barW, 8, isRisk ? STATUS_RISK_COLOR : ROYAL_PURPLE);
+    p1 += rectFill(barX, cy - 2, barWMax, 7, LAVENDER_SUBTLE);
+    p1 += rectFill(barX, cy - 2, barW, 7, isRisk ? STATUS_RISK_COLOR : ROYAL_PURPLE);
 
     // Right-aligned figures and plain colored status text (no brackets, no bold, no background)
     const amtStr = `${formatINR(actual)} / ${formatINR(limit)} (${pct}%)`;
-    p1 += textRight(MARGIN_RIGHT - 52, cy, 9, "F1", INK_SLATE, amtStr);
-    p1 += textRight(MARGIN_RIGHT, cy, 9, "F1", statusColor, statusText);
+    p1 += textRight(MARGIN_RIGHT - 48, cy, 8, "F1", INK_SLATE, amtStr);
+    p1 += textRight(MARGIN_RIGHT, cy, 8, "F1", statusColor, statusText);
     cy -= 18;
   });
 
@@ -4712,15 +4712,15 @@ function buildMultiPageVectorPDF(fin, data, user) {
         `Saved: ${formatINR(g.currentSaved)} of ${formatINR(g.targetAmount)} | Target: ${proj.plannedMonthStr}`);
 
       // Progress bar
-      const gBarX = MARGIN_LEFT + 220;
-      const gBarWMax = 180;
+      const gBarX = MARGIN_LEFT + 205;
+      const gBarWMax = 145;
       const gBarW = Math.max(6, Math.round((pct / 100) * gBarWMax));
       p1 += rectFill(gBarX, gy - 4, gBarWMax, 8, LAVENDER_SUBTLE);
       p1 += rectFill(gBarX, gy - 4, gBarW, 8, isRiskGoal ? STATUS_RISK_COLOR : ROYAL_PURPLE);
 
-      // Percentage and Status label: 9pt regular plain colored text
-      p1 += textRight(MARGIN_RIGHT - 46, gy + 4, 9, "F1", INK_SLATE, `${pct}%`);
-      p1 += textRight(MARGIN_RIGHT - 8, gy + 4, 9, "F1", goalStatusColor, goalStatusText);
+      // Percentage and Status label: 8.5pt regular plain colored text cleanly separated
+      p1 += textRight(MARGIN_RIGHT - 54, gy + 4, 8.5, "F1", INK_SLATE, `${pct}%`);
+      p1 += textRight(MARGIN_RIGHT - 6, gy + 4, 8.5, "F1", goalStatusColor, goalStatusText);
 
       gy -= 36;
     });
