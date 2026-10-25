@@ -15,6 +15,12 @@
 
 ---
 
+## 📖 Technical Documentation
+
+- **[Complete API & Data Operations Reference](API_DOCUMENTATION.md):** Full documentation of all Supabase database operations, Auth flows, Realtime replication, Storage bucket usage, client-side vector engines, and database schemas with RLS policies.
+
+---
+
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository

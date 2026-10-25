@@ -290,6 +290,41 @@ window.ArthivaSupabase = {
     return await c.auth.signInWithPassword({ email, password });
   },
 
+  async signInWithPhone(phoneNumber) {
+    const c = getClient();
+    if (!c) throw new Error("Supabase is not configured");
+    // Formats into E.164: removes spaces/dashes, prepends +91 if missing
+    let formatted = String(phoneNumber || "").replace(/[\s-]/g, "");
+    if (!formatted.startsWith("+")) {
+      formatted = formatted.startsWith("91") ? `+${formatted}` : `+91${formatted}`;
+    }
+    return await c.auth.signInWithOtp({
+      phone: formatted,
+      options: {
+        channel: "sms"
+      }
+    });
+  },
+
+  async verifyPhoneOtp(phoneNumber, token) {
+    const c = getClient();
+    if (!c) throw new Error("Supabase is not configured");
+    let formatted = String(phoneNumber || "").replace(/[\s-]/g, "");
+    if (!formatted.startsWith("+")) {
+      formatted = formatted.startsWith("91") ? `+${formatted}` : `+91${formatted}`;
+    }
+    const res = await c.auth.verifyOtp({
+      phone: formatted,
+      token: String(token).trim(),
+      type: "sms"
+    });
+    if (res.data?.user) {
+      localStorage.setItem("arthiva_session_v2", "true");
+      await syncAllDataFromSupabase(true);
+    }
+    return res;
+  },
+
   async signOut() {
     const c = getClient();
     if (c) await c.auth.signOut();

@@ -18,7 +18,7 @@
 
 <div class="workbench">
   <!-- Top Workbench Bar for Reviewers & Pair Programming -->
-  <header class="workbench-header">
+  <header id="main-workbench-header" class="workbench-header">
     <div class="brand-badge">
       <div class="brand-icon-circle">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
@@ -79,8 +79,16 @@
       <a href="design-system.html" class="wb-btn" style="text-decoration: none; color: var(--primary); border-color: var(--primary);">
         🎨 Style Sheet
       </a>
+
+      <!-- Hide Toolbar Button -->
+      <button class="wb-btn" onclick="toggleWorkbenchToolbar(false)" title="Hide dev toolbar" style="padding: 6px 10px;">✕</button>
     </div>
   </header>
+
+  <!-- Floating Floating Workbench Bar Toggle (Visible when header is hidden) -->
+  <button id="workbench-floating-toggle" type="button" class="floating-dev-toggle" onclick="toggleWorkbenchToolbar(true)" title="Show Dev & Workbench Toolbar">
+    <span>🛠️ Dev Tools</span>
+  </button>
 
   <!-- Prototype Stage (Centers the 390x844 device) -->
   <main class="workbench-stage">
@@ -747,6 +755,17 @@
                 <div class="section-header-actions" style="margin-left: auto;">
                   <button type="button" class="section-link" onclick="openAddCategoryModal('flexible')">+ Add category</button>
                   <button type="button" class="section-link" onclick="openQuickAddExpenseSheet()">+ Quick log</button>
+                </div>
+              </div>
+
+              <!-- Recent Expenses Live Feed on Plan Screen -->
+              <div id="plan-recent-expenses-section" style="padding: 0 16px 14px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Recent Expenses</span>
+                  <span id="plan-expenses-count-badge" class="status-pill within" style="font-size: 10px; padding: 2px 8px;">0 logged</span>
+                </div>
+                <div id="plan-recent-expenses-list">
+                  <!-- Populated dynamically via app.js -->
                 </div>
               </div>
 
@@ -1824,6 +1843,21 @@
               <span class="bl-label">Current balance</span>
               <span id="eq-val-balance" class="bl-amount tabular-nums">₹32,000</span>
             </div>
+            <!-- Spent This Cycle (Option A: Explicit deduction from Opening/Current Balance) -->
+            <div id="breakdown-spent-cycle-row" class="breakdown-line-item" style="cursor: pointer;" onclick="toggleBreakdownSpentDetails()">
+              <div>
+                <span class="bl-label">Spent this cycle</span>
+                <span id="eq-val-spent-sub" style="display: block; font-size: 10.5px; color: var(--text-muted);">No expenses logged yet</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="eq-val-spent" class="bl-amount deduction tabular-nums">₹0</span>
+                <span id="eq-spent-expand-icon" style="font-size: 10px; color: var(--text-muted); transition: transform 0.2s;">▼</span>
+              </div>
+            </div>
+            <!-- Collapsible individual entries list -->
+            <div id="breakdown-spent-details-list" style="display: none; background: var(--bg-subtle); border-radius: 8px; padding: 8px 10px; margin: 4px 0 8px 0; max-height: 160px; overflow-y: auto; font-size: 11.5px;">
+              <!-- Injected dynamically via app.js -->
+            </div>
             <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); switchScreen('activity');">
               <span class="bl-label">Bills</span>
               <span id="eq-val-bills" class="bl-amount deduction tabular-nums">−₹12,000</span>
@@ -1846,6 +1880,11 @@
               </div>
               <div id="eq-val-total" class="bt-amount tabular-nums">₹15,000</div>
             </div>
+          </div>
+
+          <!-- Dynamic Plain-Language Narrative Explanation -->
+          <div id="safe-to-spend-narrative-box" style="margin: 12px 0; padding: 12px 14px; background: var(--lavender-light); border: 1px solid var(--lavender-border); border-radius: 12px; font-size: 12.5px; line-height: 1.5; color: var(--text-primary);">
+            <!-- Dynamically injected via app.js based on user data -->
           </div>
 
           <div class="trust-note">
@@ -2102,12 +2141,14 @@
 
           <div style="display: flex; gap: 10px;">
             <div class="form-group" style="flex: 1;">
-              <label class="form-label">STORE / MERCHANT NAME</label>
-              <input id="quick-expense-merchant" type="text" class="form-input" placeholder="e.g. Swiggy / Toit / Blinkit">
+              <label class="form-label">STORE / MERCHANT NAME *</label>
+              <input id="quick-expense-merchant" type="text" class="form-input" placeholder="e.g. Swiggy / Toit / Blinkit" oninput="validateQuickExpenseFields()">
+              <div id="quick-merchant-error" class="field-error-msg"></div>
             </div>
             <div class="form-group" style="flex: 1;">
-              <label class="form-label">TRANSACTION DATE</label>
-              <input id="quick-expense-date" type="date" class="form-input" value="2026-10-20">
+              <label class="form-label">TRANSACTION DATE *</label>
+              <input id="quick-expense-date" type="date" class="form-input" value="2026-10-20" onchange="validateQuickExpenseFields()">
+              <div id="quick-date-error" class="field-error-msg"></div>
             </div>
           </div>
 

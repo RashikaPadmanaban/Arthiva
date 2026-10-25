@@ -49,6 +49,15 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
+      - name: Inject Android SMS Permissions into AndroidManifest
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            if ! grep -q "RECEIVE_SMS" "$MANIFEST"; then
+              sed -i '/<\/manifest>/i \    <uses-permission android:name="android.permission.RECEIVE_SMS" />\n    <uses-permission android:name="android.permission.READ_SMS" />' "$MANIFEST"
+            fi
+          fi
+
       - name: Configure Version Code and Min SDK in Gradle
         run: |
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/g" android/app/build.gradle

@@ -782,9 +782,12 @@ function getPayCycleContext() {
   }
 
   const msPerDay = 1000 * 60 * 60 * 24;
+  const nowToday = new Date();
+  nowToday.setHours(0, 0, 0, 0);
+
   const daysTotal = Math.max(1, Math.round((cycleEnd - cycleStart) / msPerDay));
-  const daysElapsed = Math.max(1, Math.min(daysTotal, Math.round((refDate - cycleStart) / msPerDay) + 1));
-  const daysLeft = Math.max(1, Math.round((cycleEnd - refDate) / msPerDay));
+  const daysElapsed = Math.max(1, Math.min(daysTotal, Math.round((nowToday - cycleStart) / msPerDay) + 1));
+  const daysLeft = Math.max(1, Math.round((cycleEnd - nowToday) / msPerDay));
   const percentElapsed = Math.min(100, Math.round((daysElapsed / daysTotal) * 100));
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -800,7 +803,7 @@ function getPayCycleContext() {
     percentElapsed,
     startStr,
     endStr,
-    refDate,
+    refDate: nowToday,
     paydayDay: payday
   };
 }
@@ -898,13 +901,19 @@ function calculateFinancials() {
   const totalGoalsSavedThisCycle = (hasGoals ? ArthivaState.goals : [])
     .reduce((s, g) => s + (Number(g.savedThisCycle) || 0), 0);
 
-  const discretionaryExpenses = ArthivaState.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const discretionaryExpenses = ArthivaState.expenses
+    .filter(e => {
+      if (!e.date) return true;
+      const expD = new Date(e.date + "T00:00:00");
+      return expD >= cycleCtx.cycleStart && expD <= cycleCtx.cycleEnd;
+    })
+    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
-  // Safe to Spend equation
-  const safeToSpend = balance - billsBeforePayday - savingsToSetAside;
+  // Safe to Spend equation (Option A: Current Balance - Spent this cycle - Bills - SIPs - Goals)
+  const safeToSpend = balance - discretionaryExpenses - billsBeforePayday - savingsToSetAside;
 
   const daysLeft = cycleCtx.daysLeft || 1;
-  const rawDailyRate = Math.round(safeToSpend / daysLeft);
+  const rawDailyRate = safeToSpend > 0 ? Math.round(safeToSpend / daysLeft) : 0;
 
   const dailyRate = ArthivaState.appliedAdjustments.customDailyLimit 
     ? ArthivaState.appliedAdjustments.customDailyLimit 
@@ -912,8 +921,8 @@ function calculateFinancials() {
 
   const isShortfall = !ArthivaState.appliedAdjustments.gracePeriodUsed && 
                       !ArthivaState.appliedAdjustments.savingsDeferred &&
-                      (rawDailyRate < 1100 || safeToSpend < 15000);
-  const shortfallAmount = 2400;
+                      (safeToSpend < 0 || rawDailyRate < 500);
+  const shortfallAmount = safeToSpend < 0 ? Math.abs(safeToSpend) : 0;
 
   return {
     currentBalance: balance,
@@ -1104,6 +1113,13 @@ function renderApp() {
   // 10. Notifications Sheet
   renderNotificationsSheet();
 
+  // Sync toolbar sample data toggle button state with current state
+  const emptyToggleBtn = document.getElementById("empty-state-toggle-btn");
+  if (emptyToggleBtn) {
+    emptyToggleBtn.classList.toggle("active", !!ArthivaState.isEmptyState);
+    emptyToggleBtn.textContent = ArthivaState.isEmptyState ? "Sample Data: Off" : "Sample Data: Rashika";
+  }
+
   // Save to persistent storage
   saveStateToStorage();
 }
@@ -1206,8 +1222,12 @@ function renderHomeScreen(fin) {
 
     if (heroAmountEl) heroAmountEl.textContent = formatINR(fin.safeToSpend);
     if (heroPaceEl) {
-      const paceVal = formatINR(fin.dailyRate);
-      heroPaceEl.innerHTML = `<span class="pace-highlight">${paceVal}/day</span> · ${fin.daysLeft} days to payday (${fin.cycleCtx.endStr})`;
+      if (fin.safeToSpend < 0) {
+        heroPaceEl.innerHTML = `<span class="pace-highlight" style="color:var(--state-risk);">Shortfall: ${formatINR(Math.abs(fin.safeToSpend))}</span> · ${fin.daysLeft} days to payday (${fin.cycleCtx.endStr})`;
+      } else {
+        const paceVal = formatINR(fin.dailyRate);
+        heroPaceEl.innerHTML = `<span class="pace-highlight">${paceVal}/day</span> · ${fin.daysLeft} days to payday (${fin.cycleCtx.endStr})`;
+      }
     }
     const heroTraceBalEl = document.getElementById("hero-trace-bal");
     const heroTraceSalaryEl = document.getElementById("hero-trace-salary");
@@ -1474,12 +1494,24 @@ function renderHomeGoalWidget() {
   }
 }
 
+function toggleBreakdownSpentDetails() {
+  const listEl = document.getElementById("breakdown-spent-details-list");
+  const iconEl = document.getElementById("eq-spent-expand-icon");
+  if (!listEl) return;
+  const isHidden = listEl.style.display === "none";
+  listEl.style.display = isHidden ? "block" : "none";
+  if (iconEl) iconEl.textContent = isHidden ? "▲" : "▼";
+}
+
 /**
  * Safe to Spend Breakdown Sheet (Item 7 OVERRIDE: clean line items, no hyphens)
  */
 function renderBreakdownSheet(fin) {
   const rowSalary = document.getElementById("eq-val-salary");
   const rowBal = document.getElementById("eq-val-balance");
+  const rowSpent = document.getElementById("eq-val-spent");
+  const rowSpentSub = document.getElementById("eq-val-spent-sub");
+  const spentListEl = document.getElementById("breakdown-spent-details-list");
   const rowBills = document.getElementById("eq-val-bills");
   const rowSips = document.getElementById("eq-val-sips");
   const rowGoal = document.getElementById("eq-val-savings");
@@ -1492,14 +1524,93 @@ function renderBreakdownSheet(fin) {
     .reduce((s, c) => s + Number(c.amount), 0);
   const billsExclSip = Math.max(0, fin.billsBeforePayday - sipTotal);
 
+  // Filter expenses strictly belonging to this cycle
+  const cycleExpenses = (ArthivaState.expenses || []).filter(e => {
+    if (!e.date) return true;
+    const expD = new Date(e.date + "T00:00:00");
+    return expD >= fin.cycleCtx.cycleStart && expD <= fin.cycleCtx.cycleEnd;
+  });
+  const totalSpentCycle = cycleExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
   if (rowSalary) rowSalary.textContent = formatINR(salary);
   if (rowBal) rowBal.textContent = formatINR(fin.currentBalance);
+
+  if (rowSpent) {
+    rowSpent.textContent = totalSpentCycle > 0 ? `−${formatINR(totalSpentCycle)}` : "₹0";
+  }
+  if (rowSpentSub) {
+    rowSpentSub.textContent = totalSpentCycle > 0
+      ? `${cycleExpenses.length} expense${cycleExpenses.length === 1 ? '' : 's'} logged (tap to view)`
+      : "No expenses logged yet";
+  }
+
+  // Populate individual entries (newest first)
+  if (spentListEl) {
+    if (cycleExpenses.length === 0) {
+      spentListEl.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:4px;">No expenses logged this cycle.</div>`;
+    } else {
+      spentListEl.innerHTML = cycleExpenses.map(e => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed var(--border-subtle);">
+          <div>
+            <strong>${escapeHTML(e.merchant || e.category.split(" ")[0])}</strong>
+            <div style="font-size:10px;color:var(--text-muted);">${escapeHTML(e.category.split(" and ")[0])} · ${formatDateDisplay(e.date)}</div>
+          </div>
+          <span style="font-weight:700;color:var(--state-risk);" class="tabular-nums">−${formatINR(e.amount)}</span>
+        </div>
+      `).join("");
+    }
+  }
+
   if (rowBills) rowBills.textContent = billsExclSip > 0 ? `−${formatINR(billsExclSip)}` : "₹0";
   if (rowSips) rowSips.textContent = sipTotal > 0 ? `−${formatINR(sipTotal)}` : "₹0";
   if (rowGoal) rowGoal.textContent = fin.savingsToSetAside > 0 ? `−${formatINR(fin.savingsToSetAside)}` : "₹0";
   if (rowTotal) rowTotal.textContent = formatINR(fin.safeToSpend);
+
   if (rowTotalSub) {
-    rowTotalSub.textContent = `${formatINR(fin.dailyRate)}/day for ${fin.daysLeft} days to ${fin.cycleCtx.endStr}`;
+    if (fin.safeToSpend < 0) {
+      rowTotalSub.innerHTML = `<span style="color:var(--state-risk);font-weight:700;">You're ${formatINR(Math.abs(fin.safeToSpend))} short this cycle</span>`;
+    } else {
+      rowTotalSub.textContent = `${formatINR(fin.dailyRate)}/day for ${fin.daysLeft} days to ${fin.cycleCtx.endStr}`;
+    }
+  }
+
+  // Dynamic plain-language explanation matching exact user data
+  const narrativeBox = document.getElementById("safe-to-spend-narrative-box");
+  if (narrativeBox) {
+    const curBal = Number(fin.currentBalance) || 0;
+    const reservedBills = billsExclSip + sipTotal;
+    const reservedGoals = Number(fin.savingsToSetAside) || 0;
+    const totalCommitted = reservedBills + reservedGoals;
+    const remainingBeforeSpend = curBal - totalCommitted;
+
+    let narrativeHTML = "";
+    if (fin.safeToSpend < 0) {
+      narrativeHTML = `
+        <strong>Breakdown:</strong> Out of <strong>${formatINR(curBal)}</strong> opening balance, 
+        ${totalSpentCycle > 0 ? `<strong>${formatINR(totalSpentCycle)}</strong> is spent this cycle, ` : ''}
+        <strong>${formatINR(reservedBills)}</strong> is reserved for upcoming bills, and 
+        <strong>${formatINR(reservedGoals)}</strong> is set aside for goals. 
+        That's <strong>${formatINR(totalCommitted + totalSpentCycle)}</strong> committed/spent against <strong>${formatINR(curBal)}</strong>, 
+        leaving you <strong style="color:var(--state-risk);">${formatINR(Math.abs(fin.safeToSpend))} short</strong> this cycle.
+      `;
+    } else if (fin.safeToSpend === 0) {
+      narrativeHTML = `
+        <strong>Breakdown:</strong> Out of <strong>${formatINR(curBal)}</strong>, 
+        ${totalSpentCycle > 0 ? `<strong>${formatINR(totalSpentCycle)}</strong> was spent, ` : ''}
+        <strong>${formatINR(reservedBills)}</strong> is reserved for bills, and 
+        <strong>${formatINR(reservedGoals)}</strong> for goals. 
+        Your commitments exactly match your available balance, leaving <strong>₹0</strong> for extra spending until next payday.
+      `;
+    } else {
+      narrativeHTML = `
+        <strong>Breakdown:</strong> Out of <strong>${formatINR(curBal)}</strong>, 
+        ${totalSpentCycle > 0 ? `<strong>${formatINR(totalSpentCycle)}</strong> is spent, ` : ''}
+        <strong>${formatINR(reservedBills)}</strong> is protected for upcoming bills, and 
+        <strong>${formatINR(reservedGoals)}</strong> is ring-fenced for goals. 
+        That leaves you <strong style="color:var(--state-safe);">${formatINR(fin.safeToSpend)} (${formatINR(fin.dailyRate)}/day)</strong> free to spend before payday.
+      `;
+    }
+    narrativeBox.innerHTML = narrativeHTML;
   }
 }
 
@@ -1615,9 +1726,27 @@ function renderBudgetsScreen(fin) {
   const container = document.getElementById("budgets-category-list");
   if (!container) return;
 
+  // Make sure any categories with logged expenses are present in budgets list
+  if (Array.isArray(ArthivaState.expenses) && Array.isArray(ArthivaState.budgets)) {
+    ArthivaState.expenses.forEach(exp => {
+      if (exp && exp.category) {
+        const norm = exp.category.trim().toLowerCase();
+        const exists = ArthivaState.budgets.some(b => b.category.trim().toLowerCase() === norm);
+        if (!exists) {
+          const matchCat = (ArthivaState.categories || []).find(c => c.name.trim().toLowerCase() === norm);
+          ArthivaState.budgets.push({
+            category: exp.category.trim(),
+            limit: matchCat?.budgetLimit || 5000,
+            icon: matchCat?.icon || "tag"
+          });
+        }
+      }
+    });
+  }
+
   const planEmptyEl = document.getElementById("plan-empty-state");
   if (planEmptyEl) {
-    const noExpensesYet = ArthivaState.isEmptyState || !ArthivaState.expenses || ArthivaState.expenses.length === 0;
+    const noExpensesYet = !ArthivaState.expenses || ArthivaState.expenses.length === 0;
     planEmptyEl.style.display = noExpensesYet ? "block" : "none";
   }
 
@@ -1632,6 +1761,9 @@ function renderBudgetsScreen(fin) {
     if (macroGoalEl) macroGoalEl.textContent = formatINR(ArthivaState.goal.monthlyAllocation);
     if (macroFlexEl) macroFlexEl.textContent = formatINR(totalFlexPlanned);
   }
+
+  // Render Recent Expenses List on Plan Screen
+  renderPlanRecentExpenses();
 
   container.innerHTML = ArthivaState.budgets.map((b, idx) => {
     const catExpenses = ArthivaState.expenses.filter(e => 
@@ -1711,6 +1843,55 @@ function toggleExpandCategory(category) {
     ArthivaState.activeExpandedCategory = category;
   }
   renderBudgetsScreen(calculateFinancials());
+}
+
+/**
+ * Renders the top Recent Expenses list directly below Quick Log on Plan screen
+ */
+function renderPlanRecentExpenses() {
+  const listEl = document.getElementById("plan-recent-expenses-list");
+  const badgeEl = document.getElementById("plan-expenses-count-badge");
+  if (!listEl) return;
+
+  const expenses = Array.isArray(ArthivaState.expenses) ? ArthivaState.expenses : [];
+  if (badgeEl) {
+    badgeEl.textContent = `${expenses.length} logged`;
+  }
+
+  if (expenses.length === 0) {
+    listEl.innerHTML = `
+      <div style="font-size: 11.5px; color: var(--text-muted); padding: 12px 14px; text-align: center; background: var(--bg-surface); border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);">
+        No expenses logged yet this cycle. Tap "+ Quick log" above to add your first expense.
+      </div>
+    `;
+    return;
+  }
+
+  // Display top 8 recent expenses, newest first
+  const recent = expenses.slice(0, 8);
+  listEl.innerHTML = recent.map(e => {
+    const isSplit = e.note && e.note.includes("Split");
+    return `
+      <div class="category-expense-item" style="padding: 10px 12px; margin-bottom: 7px; border: 1px solid var(--border-subtle); background: var(--bg-surface); border-radius: var(--radius-sm); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+        <div class="cexp-left" style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="cexp-merchant" style="font-weight: 700; color: var(--text-primary); font-size: 13px;">${escapeHTML(e.merchant || "Direct Expense")}</span>
+            ${isSplit ? `<span class="status-pill approaching" style="font-size: 9.5px; padding: 1px 5px;">Split</span>` : ""}
+            ${e.source && e.source !== 'Manual' ? `<span class="history-source-tag">${escapeHTML(e.source)}</span>` : ""}
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
+            <span style="color: var(--primary); font-weight: 600;">${escapeHTML(e.category || "General")}</span>
+            · <span>${formatDateDisplay(e.date)}</span>
+            ${e.note ? `<span style="color: var(--text-muted);"> · ${escapeHTML(e.note)}</span>` : ""}
+          </div>
+        </div>
+        <div class="cexp-right" style="display: flex; align-items: center; gap: 10px;">
+          <span class="cexp-amount tabular-nums" style="font-weight: 700; font-size: 13.5px; color: var(--text-primary);">${formatINR(e.amount)}</span>
+          <button class="cexp-delete" onclick="deleteExpenseRecord('${e.id}')" title="Delete expense" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; padding: 4px;">✕</button>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 // --------------------------------------------------------------------------
@@ -3579,7 +3760,7 @@ function openQuickAddExpenseSheet() {
   if (amtInput) amtInput.value = "";
   if (merchInput) merchInput.value = "";
   if (noteInput) noteInput.value = "";
-  if (dateInput) dateInput.value = "2026-10-20";
+  if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
   if (deductCheck) deductCheck.checked = true;
   if (amt1Input) amt1Input.value = "";
   if (amt2Input) amt2Input.value = "";
@@ -3590,6 +3771,14 @@ function openQuickAddExpenseSheet() {
   setInlineError("quick-split-1-error", "quick-split-amt-1", "");
   setInlineError("quick-split-2-error", "quick-split-amt-2", "");
   setInlineError("quick-split-cat-error", null, "");
+  setInlineError("quick-merchant-error", "quick-expense-merchant", "");
+  setInlineError("quick-date-error", "quick-expense-date", "");
+
+  const saveBtn = document.getElementById("btn-save-quick-expense");
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save Expense";
+  }
 
   setQuickExpenseMode(ArthivaState.quickExpenseMode || "single");
   openBottomSheet("quick-expense-sheet");
@@ -3710,6 +3899,36 @@ function onSplitAmountInput(index) {
   validateQuickExpenseSplit();
 }
 
+function validateQuickExpenseFields() {
+  const isSplit = ArthivaState.quickExpenseMode === "split";
+  const merchInput = document.getElementById("quick-expense-merchant");
+  const dateInput = document.getElementById("quick-expense-date");
+  const saveBtn = document.getElementById("btn-save-quick-expense");
+
+  let baseValid = isSplit ? validateQuickExpenseSplit() : validateQuickExpenseSingle();
+
+  // Validate Merchant Name (required)
+  const merchVal = merchInput ? merchInput.value.trim() : "";
+  if (!merchVal) {
+    setInlineError("quick-merchant-error", "quick-expense-merchant", "Store / Merchant name is required.");
+    baseValid = false;
+  } else {
+    setInlineError("quick-merchant-error", "quick-expense-merchant", "");
+  }
+
+  // Validate Transaction Date (required)
+  const dateVal = dateInput ? dateInput.value.trim() : "";
+  if (!dateVal) {
+    setInlineError("quick-date-error", "quick-expense-date", "Transaction date is required.");
+    baseValid = false;
+  } else {
+    setInlineError("quick-date-error", "quick-expense-date", "");
+  }
+
+  if (saveBtn) saveBtn.disabled = !baseValid;
+  return baseValid;
+}
+
 function validateQuickExpenseSingle() {
   const totalInput = document.getElementById("quick-expense-amount");
   const catSelect = document.getElementById("quick-expense-category-select");
@@ -3720,16 +3939,15 @@ function validateQuickExpenseSingle() {
   const cat = catSelect ? catSelect.value : selectedQuickCategory;
 
   let isValid = true;
-  if (rawTotal !== "" && (isNaN(total) || total <= 0)) {
+  if (rawTotal === "" || isNaN(total) || total <= 0) {
     setInlineError("quick-amount-error", "quick-expense-amount", "Enter a total amount greater than ₹0.");
     isValid = false;
   } else {
     setInlineError("quick-amount-error", "quick-expense-amount", "");
-    if (rawTotal === "" || total <= 0) isValid = false;
   }
 
   if (!cat) {
-    setInlineError("quick-single-cat-error", "quick-expense-category-select", "Select a category for each split.");
+    setInlineError("quick-single-cat-error", "quick-expense-category-select", "Select a spending category.");
     isValid = false;
   } else {
     setInlineError("quick-single-cat-error", "quick-expense-category-select", "");
@@ -3823,103 +4041,217 @@ function updateSplitValidation() {
   validateQuickExpenseSplit();
 }
 
-function submitQuickExpense() {
+async function submitQuickExpense() {
+  const saveBtn = document.getElementById("btn-save-quick-expense");
   const amtInput = document.getElementById("quick-expense-amount");
   const merchInput = document.getElementById("quick-expense-merchant");
   const noteInput = document.getElementById("quick-expense-note");
   const dateInput = document.getElementById("quick-expense-date");
   const deductCheck = document.getElementById("quick-expense-deduct-balance");
+  const catSelect = document.getElementById("quick-expense-category-select");
+
+  // 1. Validate all fields
+  if (!validateQuickExpenseFields()) {
+    return;
+  }
 
   const totalAmount = Number(amtInput ? amtInput.value : 0);
   const merchant = merchInput ? merchInput.value.trim() : "";
   const note = noteInput ? noteInput.value.trim() : "";
-  const date = dateInput ? dateInput.value : "2026-10-20";
+  const date = dateInput ? dateInput.value.trim() : new Date().toISOString().split("T")[0];
   const shouldDeduct = deductCheck ? deductCheck.checked : true;
+  const isSplit = ArthivaState.quickExpenseMode === "split";
 
-  if (ArthivaState.quickExpenseMode === "split") {
-    if (!validateQuickExpenseSplit()) return;
-
-    const cat1Select = document.getElementById("quick-split-cat-1");
-    const cat2Select = document.getElementById("quick-split-cat-2");
-    const amt1Input = document.getElementById("quick-split-amt-1");
-    const amt2Input = document.getElementById("quick-split-amt-2");
-
-    const c1 = cat1Select ? cat1Select.value : "Dining out and food ordering";
-    const c2 = cat2Select ? cat2Select.value : "Groceries and daily essentials";
-    const a1 = Number(amt1Input.value) || 0;
-    const a2 = Number(amt2Input.value) || 0;
-
-    const baseId = Date.now();
-    ArthivaState.expenses.unshift({
-      id: "exp-" + baseId + "-1",
-      category: c1,
-      amount: a1,
-      merchant: merchant || "Direct Purchase",
-      date,
-      note: note ? `${note} (Split 1/2)` : "Split expense (1/2)",
-      source: "Manual"
-    });
-
-    ArthivaState.expenses.unshift({
-      id: "exp-" + baseId + "-2",
-      category: c2,
-      amount: a2,
-      merchant: merchant || "Direct Purchase",
-      date,
-      note: note ? `${note} (Split 2/2)` : "Split expense (2/2)",
-      source: "Manual"
-    });
-
-    showToast(`Logged split expense: ${formatINR(a1)} to ${c1.split(" ")[0]} & ${formatINR(a2)} to ${c2.split(" ")[0]}!`);
-  } else {
-    if (!validateQuickExpenseSingle()) return;
-
-    const newExp = {
-      id: "exp-" + Date.now(),
-      category: selectedQuickCategory,
-      amount: totalAmount,
-      merchant: merchant || "Direct Purchase",
-      date,
-      note,
-      source: "Manual"
-    };
-
-    ArthivaState.expenses.unshift(newExp);
-    showToast(`Logged ${formatINR(totalAmount)} for ${selectedQuickCategory.split(" ")[0]}!`);
+  // Prevent multiple submits & show loading state
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
   }
 
-  if (shouldDeduct) {
-    const prevBal = ArthivaState.balance.amount;
-    const newBal = Math.max(0, prevBal - totalAmount);
-    ArthivaState.balance.amount = newBal;
-    ArthivaState.balance.lastUpdated = new Date().toISOString();
-    ArthivaState.balance.label = "You entered · Just now";
+  try {
+    let createdRecords = [];
 
-    const now = new Date();
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const dateStr = `${now.getDate()} ${months[now.getMonth()]}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    if (isSplit) {
+      const cat1Select = document.getElementById("quick-split-cat-1");
+      const cat2Select = document.getElementById("quick-split-cat-2");
+      const amt1Input = document.getElementById("quick-split-amt-1");
+      const amt2Input = document.getElementById("quick-split-amt-2");
 
-    ArthivaState.balanceHistory.unshift({
-      id: "bal-" + Date.now(),
-      date: dateStr,
-      month: formatMonthYear(now),
-      timestamp: now.toISOString(),
-      previousBalance: prevBal,
-      newBalance: newBal,
-      changeAmount: -totalAmount,
-      reason: "Expense or purchase",
-      source: "Quick log sync",
-      notes: merchant ? `${merchant}${note ? ' · ' + note : ''}` : (note || "Direct purchase")
-    });
+      const c1 = cat1Select ? cat1Select.value : "Dining out and food ordering";
+      const c2 = cat2Select ? cat2Select.value : "Groceries and daily essentials";
+      const a1 = Number(amt1Input?.value) || 0;
+      const a2 = Number(amt2Input?.value) || 0;
+
+      const baseId = Date.now();
+      const rec1 = {
+        id: "exp-" + baseId + "-1",
+        category: c1,
+        amount: a1,
+        merchant: merchant || "Direct Purchase",
+        date,
+        note: note ? `${note} (Split 1/2)` : "Split expense (1/2)",
+        source: "Manual"
+      };
+      const rec2 = {
+        id: "exp-" + baseId + "-2",
+        category: c2,
+        amount: a2,
+        merchant: merchant || "Direct Purchase",
+        date,
+        note: note ? `${note} (Split 2/2)` : "Split expense (2/2)",
+        source: "Manual"
+      };
+
+      if (window.ArthivaSupabase && typeof window.ArthivaSupabase.insertRecord === "function") {
+        const res1 = await window.ArthivaSupabase.insertRecord("expenses", {
+          category: c1,
+          amount: a1,
+          merchant: merchant || "Direct Purchase",
+          date,
+          note: rec1.note,
+          source: "Manual"
+        });
+        if (res1?.error) throw res1.error;
+        if (res1?.data?.[0]?.id) rec1.id = res1.data[0].id;
+
+        const res2 = await window.ArthivaSupabase.insertRecord("expenses", {
+          category: c2,
+          amount: a2,
+          merchant: merchant || "Direct Purchase",
+          date,
+          note: rec2.note,
+          source: "Manual"
+        });
+        if (res2?.error) throw res2.error;
+        if (res2?.data?.[0]?.id) rec2.id = res2.data[0].id;
+      }
+
+      ArthivaState.expenses.unshift(rec2);
+      ArthivaState.expenses.unshift(rec1);
+      createdRecords = [rec1, rec2];
+    } else {
+      const cat = catSelect?.value || selectedQuickCategory || "Groceries and daily essentials";
+      const newExp = {
+        id: "exp-" + Date.now(),
+        category: cat,
+        amount: totalAmount,
+        merchant: merchant || "Direct Purchase",
+        date,
+        note,
+        source: "Manual"
+      };
+
+      if (window.ArthivaSupabase && typeof window.ArthivaSupabase.insertRecord === "function") {
+        const res = await window.ArthivaSupabase.insertRecord("expenses", {
+          category: cat,
+          amount: totalAmount,
+          merchant: merchant || "Direct Purchase",
+          date,
+          note,
+          source: "Manual"
+        });
+        if (res?.error) throw res.error;
+        if (res?.data?.[0]?.id) newExp.id = res.data[0].id;
+      }
+
+      ArthivaState.expenses.unshift(newExp);
+      ArthivaState.activeExpandedCategory = cat;
+      createdRecords = [newExp];
+    }
+
+    // Unlock full mode if app was previously in empty state
+    if (ArthivaState.isEmptyState) {
+      ArthivaState.isEmptyState = false;
+    }
+
+    // Deduct from bank balance if checkbox is checked
+    if (shouldDeduct) {
+      const prevBal = ArthivaState.balance.amount;
+      const newBal = Math.max(0, prevBal - totalAmount);
+      ArthivaState.balance.amount = newBal;
+      ArthivaState.balance.lastUpdated = new Date().toISOString();
+      ArthivaState.balance.label = "You entered · Just now";
+
+      const now = new Date();
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const dateStr = `${now.getDate()} ${months[now.getMonth()]}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+      ArthivaState.balanceHistory.unshift({
+        id: "bal-" + Date.now(),
+        date: dateStr,
+        month: formatMonthYear(now),
+        timestamp: now.toISOString(),
+        previousBalance: prevBal,
+        newBalance: newBal,
+        changeAmount: -totalAmount,
+        reason: "Expense or purchase",
+        source: "Quick log sync",
+        notes: merchant ? `${merchant}${note ? ' · ' + note : ''}` : (note || "Direct purchase")
+      });
+
+      if (window.ArthivaSupabase && typeof window.ArthivaSupabase.updateRecord === "function") {
+        try {
+          const user = await window.ArthivaSupabase.getUser();
+          if (user?.id) {
+            await window.ArthivaSupabase.updateRecord("profiles", user.id, {
+              current_balance: newBal,
+              updated_at: new Date().toISOString()
+            });
+          }
+        } catch (balErr) {
+          console.warn("[Quick Log] Error updating user balance in profiles:", balErr);
+        }
+      }
+    }
+
+    // Persist changes and refresh entire UI
+    saveStateToStorage();
+    renderApp();
+
+    // Reset form fields
+    if (amtInput) amtInput.value = "";
+    if (merchInput) merchInput.value = "";
+    if (noteInput) noteInput.value = "";
+    if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+    const amt1 = document.getElementById("quick-split-amt-1");
+    const amt2 = document.getElementById("quick-split-amt-2");
+    if (amt1) amt1.value = "";
+    if (amt2) amt2.value = "";
+    quickSplitProportion = 0.5;
+
+    // Close the sheet and display user-specified success message
+    closeBottomSheet("quick-expense-sheet");
+    showToast(`Expense of ${formatINR(totalAmount)} added`);
+
+    // Smooth scroll to the Recent Expenses section on Plan screen
+    setTimeout(() => {
+      const recentExpensesSection = document.getElementById("plan-recent-expenses-section");
+      if (recentExpensesSection) {
+        recentExpensesSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }, 120);
+
+  } catch (err) {
+    console.error("[Quick Log Save Error]:", err);
+    showToast(err?.message || "Failed to save expense. Please try again.", "error");
+    // Sheet stays open so user doesn't lose entered inputs
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save Expense";
+    }
   }
-
-  closeBottomSheet("quick-expense-sheet");
-  renderApp();
 }
 
 function deleteExpenseRecord(expenseId) {
   ArthivaState.expenses = ArthivaState.expenses.filter(e => e.id !== expenseId);
+  saveStateToStorage();
   renderApp();
+  if (window.ArthivaSupabase && typeof window.ArthivaSupabase.deleteRecord === "function") {
+    window.ArthivaSupabase.deleteRecord("expenses", expenseId).catch(err => {
+      console.warn("[Delete Expense] Supabase delete notice:", err);
+    });
+  }
   showToast("Expense removed from records.");
 }
 
@@ -6484,12 +6816,31 @@ function maskAuthDestination(channel, rawValue, countryCode) {
   }
 }
 
-function submitAuthContinueToOtp() {
+async function submitAuthContinueToOtp() {
   if (authCurrentChannel === "mobile") {
     if (!validateAuthMobileInput(true)) return;
     const country = document.getElementById("auth-country-code")?.value || "+91";
     const mob = (document.getElementById("auth-mobile-input")?.value || "").trim();
     authPendingTarget = `${country} ${mob}`;
+
+    // Request Real Supabase Phone OTP if Supabase client is configured
+    if (window.ArthivaSupabase && typeof window.ArthivaSupabase.signInWithPhone === "function") {
+      try {
+        const fullPhone = `${country}${mob}`;
+        const res = await window.ArthivaSupabase.signInWithPhone(fullPhone);
+        if (res?.error) {
+          console.warn("[Auth] Supabase Phone OTP warning:", res.error.message);
+          // Only show error if not in demo/offline fallback mode
+          if (!window.location.hostname.includes("localhost") && !res.error.message.includes("provider is not enabled")) {
+            showToast(res.error.message, "error");
+          }
+        } else {
+          console.log("[Auth] Supabase OTP sent successfully to:", fullPhone);
+        }
+      } catch (err) {
+        console.warn("[Auth] Phone OTP call exception:", err);
+      }
+    }
   } else {
     if (!validateAuthEmailInput(true)) return;
     const em = (document.getElementById("auth-email-only-input")?.value || "").trim();
@@ -6568,7 +6919,7 @@ function startAuthOtpTimer() {
   }, 1000);
 }
 
-function resendAuthOtp() {
+async function resendAuthOtp() {
   authOtpWrongAttempts = 0;
   authOtpExpired = false;
   authOtpLockoutUntil = 0;
@@ -6577,6 +6928,17 @@ function resendAuthOtp() {
   const verifyBtn = document.getElementById("btn-verify-otp");
   if (verifyBtn) verifyBtn.disabled = false;
   startAuthOtpTimer();
+
+  if (authCurrentChannel === "mobile" && window.ArthivaSupabase && typeof window.ArthivaSupabase.signInWithPhone === "function") {
+    const country = document.getElementById("auth-country-code")?.value || "+91";
+    const mob = (document.getElementById("auth-mobile-input")?.value || "").trim();
+    try {
+      await window.ArthivaSupabase.signInWithPhone(`${country}${mob}`);
+    } catch (e) {
+      console.warn("[Auth] Resend OTP error:", e);
+    }
+  }
+
   showToast("A fresh 6-digit OTP has been sent.");
 }
 
@@ -6677,7 +7039,7 @@ function setOtpError(msg) {
   }
 }
 
-function verifyAuthOtpCode() {
+async function verifyAuthOtpCode() {
   if (authOtpLockoutUntil && Date.now() < authOtpLockoutUntil) {
     setOtpError("Too many attempts. Try again in 10 minutes");
     return;
@@ -6698,8 +7060,29 @@ function verifyAuthOtpCode() {
     return;
   }
 
-  // Demo valid OTP is 123456 (any other 6-digit code triggers attempt countdown & lock)
-  if (code !== "123456") {
+  let verifiedViaSupabase = false;
+  const country = document.getElementById("auth-country-code")?.value || "+91";
+  const rawMob = (document.getElementById("auth-mobile-input")?.value || "").trim();
+
+  // Try real Supabase Phone verification if configured
+  if (authCurrentChannel === "mobile" && window.ArthivaSupabase && typeof window.ArthivaSupabase.verifyPhoneOtp === "function") {
+    try {
+      const fullPhone = `${country}${rawMob}`;
+      const res = await window.ArthivaSupabase.verifyPhoneOtp(fullPhone, code);
+      if (res && res.data && res.data.user) {
+        verifiedViaSupabase = true;
+      } else if (res && res.error) {
+        console.warn("[Auth] Supabase OTP verification notice:", res.error.message);
+      }
+    } catch (err) {
+      console.warn("[Auth] Supabase verify OTP exception:", err);
+    }
+  }
+
+  // Fallback demo valid OTP is 123456
+  const isDemoValid = code === "123456";
+
+  if (!verifiedViaSupabase && !isDemoValid) {
     authOtpWrongAttempts++;
     const remaining = 3 - authOtpWrongAttempts;
     if (remaining <= 0) {
@@ -6720,7 +7103,6 @@ function verifyAuthOtpCode() {
   setOtpError("");
   if (authOtpTimerInterval) clearInterval(authOtpTimerInterval);
 
-  const rawMob = (document.getElementById("auth-mobile-input")?.value || "").trim();
   const rawEm = (document.getElementById("auth-email-only-input")?.value || "").trim();
 
   if (authCurrentFlowMode === "signin") {
@@ -6730,13 +7112,13 @@ function verifyAuthOtpCode() {
     const matchesSavedUser = (authCurrentChannel === "mobile" && ArthivaState.auth.user.mobile === rawMob && ArthivaState.auth.user.name) ||
                              (authCurrentChannel === "email" && ArthivaState.auth.user.email && ArthivaState.auth.user.email.toLowerCase() === rawEm.toLowerCase() && ArthivaState.auth.user.name);
 
-    if (!isRashikaSample && !matchesSavedUser) {
+    if (!verifiedViaSupabase && !isRashikaSample && !matchesSavedUser) {
       const noAccPrompt = document.getElementById("auth-no-account-prompt");
       if (noAccPrompt) noAccPrompt.style.display = "block";
       return;
     }
 
-    if (isRashikaSample && !matchesSavedUser) {
+    if (isRashikaSample && !matchesSavedUser && !verifiedViaSupabase) {
       ArthivaState = JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
 
@@ -7939,6 +8321,30 @@ function setDeviceFrame(mode) {
   });
 }
 
+function toggleWorkbenchToolbar(show) {
+  const header = document.getElementById("main-workbench-header");
+  const floatBtn = document.getElementById("workbench-floating-toggle");
+  const isCurrentlyVisible = header ? header.style.display !== "none" : true;
+  const shouldShow = show !== undefined ? show : !isCurrentlyVisible;
+
+  if (header) {
+    header.style.display = shouldShow ? "flex" : "none";
+  }
+  if (floatBtn) {
+    floatBtn.style.display = shouldShow ? "none" : "flex";
+  }
+  try {
+    localStorage.setItem("arthiva_wb_toolbar_visible", shouldShow ? "true" : "false");
+  } catch (e) {}
+}
+
+function initWorkbenchToolbarState() {
+  const saved = localStorage.getItem("arthiva_wb_toolbar_visible");
+  if (saved === "false") {
+    toggleWorkbenchToolbar(false);
+  }
+}
+
 function setDeviceZoom(zoomLevel) {
   const wrapper = document.getElementById("device-scale-wrapper");
   if (wrapper) {
@@ -8110,6 +8516,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Restore Workbench Toolbar visibility preference
+  initWorkbenchToolbarState();
+
   // Background visibility lock listener
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden" && ArthivaState.auth.isAuthenticated) {
@@ -8118,5 +8527,202 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
+
+  // Initialize Android SMS Listener (Capacitor Native bridge)
+  initAndroidSmsAutoCapture();
 });
+
+// ============================================================================
+// 12. ANDROID TRANSACTION SMS AUTO-CAPTURE ENGINE (Indian Banks / UPI)
+// ============================================================================
+
+function initAndroidSmsAutoCapture() {
+  // Check if running on Android Capacitor or custom native bridge
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    console.log("[SMS Engine] Running in Capacitor native container.");
+
+    // 1. Check custom plugin or listener bridge if registered
+    if (window.Capacitor.Plugins && window.Capacitor.Plugins.SmsInboxReader) {
+      window.Capacitor.Plugins.SmsInboxReader.addListener("onSmsReceived", (msg) => {
+        if (msg && msg.body) {
+          handleIncomingAndroidSMS(msg.sender || msg.address || "Bank", msg.body);
+        }
+      });
+    }
+
+    // 2. Window bridge fallback (invoked from Android MainActivity or BroadcastReceiver via evaluateJavascript)
+    window.onNativeSmsReceived = function(sender, body) {
+      handleIncomingAndroidSMS(sender, body);
+    };
+  }
+}
+
+/**
+ * Parses and processes incoming SMS messages on Android.
+ * Filters OTPs/promotions, extracts amount/merchant/category/ref_id,
+ * updates local state, deducts balance, and writes to Supabase.
+ */
+async function handleIncomingAndroidSMS(smsSender, smsBody) {
+  if (!smsBody || typeof smsBody !== "string") return;
+
+  const text = smsBody.trim();
+  const lower = text.toLowerCase();
+
+  // 1. FILTER: Ignore OTPs, logins, passwords, PINs, and pure promotional SMS
+  if (
+    lower.includes("otp") ||
+    lower.includes("one time password") ||
+    lower.includes("verification code") ||
+    lower.includes("secret code") ||
+    lower.includes("do not share") ||
+    lower.includes("login with") ||
+    lower.includes("win ") ||
+    lower.includes("offer valid") ||
+    lower.includes("pre-approved")
+  ) {
+    return;
+  }
+
+  // 2. FILTER: Only capture DEBIT transactions (spending)
+  const isDebit =
+    lower.includes("debited") ||
+    lower.includes("spent") ||
+    lower.includes("paid") ||
+    lower.includes("withdrawn") ||
+    lower.includes("txn of") ||
+    lower.includes("transferred to") ||
+    lower.includes("used at");
+
+  if (!isDebit) {
+    return;
+  }
+
+  // 3. EXTRACT AMOUNT: e.g. Rs. 250.00, INR 1,200.50, Rs 500
+  const amtMatch = text.match(/(?:(?:rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?))/i);
+  if (!amtMatch || !amtMatch[1]) return;
+  const amount = parseFloat(amtMatch[1].replace(/,/g, ""));
+  if (isNaN(amount) || amount <= 0) return;
+
+  // 4. EXTRACT REFERENCE ID / UPI REF / TXN ID (For deduplication)
+  let refId = null;
+  const refMatch = text.match(/(?:ref(?:erence)?\s*(?:no\.?|id)?|txn\s*(?:no\.?|id)?|rrn|upi\s*ref(?:erence)?)\s*[:#-]?\s*([a-zA-Z0-9]+)/i);
+  if (refMatch && refMatch[1]) {
+    refId = refMatch[1];
+  } else {
+    // Generate deterministic ref hash from sender + amount + date to avoid double-logging within same minute
+    const todayStr = new Date().toISOString().slice(0, 10);
+    refId = `sms-${String(smsSender).replace(/[^a-zA-Z0-9]/g, "")}-${amount}-${todayStr}`;
+  }
+
+  // Check if already captured in local session
+  const alreadyExists = ArthivaState.expenses.some(e => e.ref_id === refId || e.id === refId);
+  if (alreadyExists) {
+    console.log("[SMS Engine] Duplicate SMS transaction ignored:", refId);
+    return;
+  }
+
+  // 5. EXTRACT MERCHANT OR BENEFICIARY
+  let merchant = "Bank Transaction";
+  const merchantMatch =
+    text.match(/(?:to\s+|at\s+|info\s*:\s*|towards\s+)([A-Za-z0-9\s&.\-*]+?)(?:\s+(?:on|ref|via|avail|bal|using|thru|dated|\.|\n|$))/i) ||
+    text.match(/(?:vpa\s+|upi\s+id\s+)([a-zA-Z0-9.\-_@]+)/i);
+
+  if (merchantMatch && merchantMatch[1]) {
+    merchant = merchantMatch[1].trim().slice(0, 32);
+  } else if (smsSender) {
+    // Use cleaned bank sender tag (e.g. "HDFCBK", "SBIINB", "ICICIB")
+    const cleanSender = String(smsSender).replace(/^[A-Z]{2}-/i, "").trim();
+    merchant = cleanSender || "Direct Purchase";
+  }
+
+  // 6. INFER CATEGORY FROM MERCHANT OR SMS BODY
+  let category = "Groceries and daily essentials";
+  const mLower = `${merchant} ${text}`.toLowerCase();
+
+  if (mLower.includes("swiggy") || mLower.includes("zomato") || mLower.includes("eat") || mLower.includes("cafe") || mLower.includes("restaurant") || mLower.includes("food")) {
+    category = "Dining out and food ordering";
+  } else if (mLower.includes("uber") || mLower.includes("ola") || mLower.includes("metro") || mLower.includes("fuel") || mLower.includes("petrol") || mLower.includes("hpcl") || mLower.includes("bpcl") || mLower.includes("irctc")) {
+    category = "Transit, fuel and cab rides";
+  } else if (mLower.includes("blinkit") || mLower.includes("zepto") || mLower.includes("instamart") || mLower.includes("bigbasket") || mLower.includes("dmart") || mLower.includes("supermarket") || mLower.includes("mart")) {
+    category = "Groceries and daily essentials";
+  } else if (mLower.includes("amazon") || mLower.includes("flipkart") || mLower.includes("myntra") || mLower.includes("nykaa") || mLower.includes("shopping") || mLower.includes("retail")) {
+    category = "Shopping and personal discretionary";
+  } else if (mLower.includes("pharmacy") || mLower.includes("apollo") || mLower.includes("medplus") || mLower.includes("hospital") || mLower.includes("clinic") || mLower.includes("1mg")) {
+    category = "Medical and unplanned emergency";
+  } else if (mLower.includes("netflix") || mLower.includes("spotify") || mLower.includes("prime") || mLower.includes("hotstar") || mLower.includes("cinema") || mLower.includes("bookmyshow") || mLower.includes("pvr")) {
+    category = "Weekend leisure and entertainment";
+  }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const newExpense = {
+    id: "sms-" + Date.now(),
+    category,
+    amount,
+    merchant,
+    date: todayIso,
+    note: `Auto-captured from SMS (${smsSender || 'Bank'})`,
+    source: "SMS",
+    ref_id: refId
+  };
+
+  // 7. PREPEND TO LOCAL EXPENSES LIST
+  ArthivaState.expenses.unshift(newExpense);
+
+  // 8. DEDUCT IMMEDIATELY FROM CURRENT BALANCE
+  const prevBal = ArthivaState.balance.amount;
+  const newBal = Math.max(0, prevBal - amount);
+  ArthivaState.balance.amount = newBal;
+  ArthivaState.balance.lastUpdated = new Date().toISOString();
+  ArthivaState.balance.label = "Auto-synced from SMS";
+
+  const now = new Date();
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const dateStr = `${now.getDate()} ${months[now.getMonth()]}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+  ArthivaState.balanceHistory.unshift({
+    id: "bal-" + Date.now(),
+    date: dateStr,
+    month: formatMonthYear(now),
+    timestamp: now.toISOString(),
+    previousBalance: prevBal,
+    newBalance: newBal,
+    changeAmount: -amount,
+    reason: "Auto-captured SMS Expense",
+    source: "SMS Sync",
+    notes: `${merchant} (Ref: ${refId})`
+  });
+
+  saveStateToStorage();
+  renderApp();
+
+  showToast(`Auto-logged ${formatINR(amount)} at ${merchant} via SMS`, "success");
+
+  // 9. SYNC TO SUPABASE (Expenses & Profiles tables)
+  if (window.ArthivaSupabase && typeof window.ArthivaSupabase.insertRecord === "function") {
+    try {
+      await window.ArthivaSupabase.insertRecord("expenses", {
+        category,
+        amount,
+        merchant,
+        date: todayIso,
+        note: `Auto-captured from SMS (${smsSender || 'Bank'})`,
+        source: "SMS",
+        ref_id: refId
+      });
+
+      const user = await window.ArthivaSupabase.getUser();
+      if (user) {
+        await window.ArthivaSupabase.updateRecord("profiles", user.id, {
+          current_balance: newBal,
+          updated_at: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.warn("[SMS Engine] Cloud sync notice:", err);
+    }
+  }
+}
+
+// Make accessible on window object for testing and native evaluation
+window.handleIncomingAndroidSMS = handleIncomingAndroidSMS;
 

@@ -50,8 +50,14 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   date DATE NOT NULL DEFAULT CURRENT_DATE,
   note TEXT,
   source TEXT DEFAULT 'Manual',
+  ref_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Unique constraint index for SMS expense deduplication (per user & transaction ref)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_user_expense_ref 
+  ON public.expenses(user_id, ref_id) 
+  WHERE ref_id IS NOT NULL;
 
 -- 4. SAVINGS GOALS TABLE
 CREATE TABLE IF NOT EXISTS public.goals (
