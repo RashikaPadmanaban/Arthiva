@@ -1197,7 +1197,11 @@ function renderHomeScreen(fin) {
     if (heroCard) heroCard.style.display = "block";
     if (heroEmptyState) heroEmptyState.style.display = "none";
     if (alertCard) {
-      alertCard.style.display = fin.isShortfall ? "flex" : "none";
+      // Hide Pacing Attention if there is no data or no shortfall
+      const hasUserData = !ArthivaState.isEmptyState &&
+                          ((ArthivaState.commitments && ArthivaState.commitments.length > 0) ||
+                           (ArthivaState.expenses && ArthivaState.expenses.length > 0));
+      alertCard.style.display = (hasUserData && fin.isShortfall) ? "flex" : "none";
     }
 
     if (heroAmountEl) heroAmountEl.textContent = formatINR(fin.safeToSpend);
@@ -1868,20 +1872,24 @@ function renderInsightsScreen(fin) {
   const nextPayStr = finObj.cycleCtx.endStr;
 
   const insEmptyCard = document.getElementById("insights-empty-state");
-  const insFilledContent = document.getElementById("insights-filled-content");
+  const insPopulatedContainer = document.getElementById("insights-populated-container");
   const insRecSection = document.getElementById("ins-recommendations-section");
-  const hasEnoughTxns = !ArthivaState.isEmptyState && ArthivaState.expenses && ArthivaState.expenses.length > 0;
 
-  if (!hasEnoughTxns) {
-    if (insEmptyCard) insEmptyCard.style.display = "block";
-    if (insFilledContent) insFilledContent.style.display = "none";
-    if (insRecSection) insRecSection.style.display = "none";
+  const totalEntries = (ArthivaState.expenses ? ArthivaState.expenses.length : 0) +
+                       (ArthivaState.commitments ? ArthivaState.commitments.filter(c => c.status === "paid").length : 0);
+  const isDemoOrPopulated = !ArthivaState.isEmptyState && totalEntries > 0;
+
+  // DUMMY STATE: When data is not there for a user, show the friendly dummy/locked preview until data arrives
+  if (!isDemoOrPopulated) {
+    if (insEmptyCard) insEmptyCard.style.display = "flex";
+    if (insPopulatedContainer) insPopulatedContainer.style.display = "none";
     return;
-  } else {
-    if (insEmptyCard) insEmptyCard.style.display = "none";
-    if (insFilledContent) insFilledContent.style.display = "block";
-    if (insRecSection) insRecSection.style.display = "block";
   }
+
+  // Once data arrives, UNLOCK the full insights dashboard
+  if (insEmptyCard) insEmptyCard.style.display = "none";
+  if (insPopulatedContainer) insPopulatedContainer.style.display = "block";
+  if (insRecSection) insRecSection.style.display = "block";
 
   // 1. Update 6 Summary Cards
   const incVal = document.getElementById("ins-income-val");
@@ -2566,7 +2574,27 @@ function renderNotificationsSheet() {
   const listEl = document.getElementById("notifications-items-list");
   if (!listEl) return;
 
-  listEl.innerHTML = ArthivaState.notifications.map(n => `
+  const notifs = ArthivaState.isEmptyState ? [] : (ArthivaState.notifications || []);
+
+  if (notifs.length === 0) {
+    listEl.innerHTML = `
+      <div class="empty-state-box" style="margin: 20px 0; border: 1px dashed var(--border-subtle); padding: 28px 16px;">
+        <div class="empty-state-icon" style="width: 44px; height: 44px; margin-bottom: 6px; background: var(--lavender-light); color: var(--primary);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </div>
+        <h3 style="font-size: 15px; margin-bottom: 4px;">No notifications yet</h3>
+        <p style="font-size: 12px; color: var(--text-secondary); max-width: 250px; line-height: 1.4;">
+          You're all caught up! Important reminders, bill alerts, and pacing updates will appear here.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = notifs.map(n => `
     <div class="notification-card ${n.read ? '' : 'unread'}" onclick="handleNotificationClick('${n.id}')">
       <div class="notif-top">
         <div class="notif-title-row">
@@ -7922,6 +7950,17 @@ function setDeviceZoom(zoomLevel) {
   });
 }
 
+function previewSampleInsights() {
+  ArthivaState.isEmptyState = false;
+  const btn = document.getElementById("empty-state-toggle-btn");
+  if (btn) {
+    btn.classList.remove("active");
+    btn.textContent = "Sample Data: Rashika";
+  }
+  renderApp();
+  showToast("Showing sample insights preview (Sample Data active)", "info");
+}
+
 function toggleEmptyState() {
   ArthivaState.isEmptyState = !ArthivaState.isEmptyState;
   const btn = document.getElementById("empty-state-toggle-btn");
@@ -7932,6 +7971,7 @@ function toggleEmptyState() {
   renderApp();
   showToast(ArthivaState.isEmptyState ? "Empty state active: Add your bills." : "Sample financial data loaded.");
 }
+
 
 function triggerSplashSequence() {
   const splash = document.getElementById("app-splash-screen");
@@ -8048,20 +8088,26 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Connect & Sync with Supabase
-  if (window.ArthivaSupabase && typeof window.ArthivaSupabase.select === "function") {
-    (async function initSupabaseSync() {
-      try {
-        const { data: dbTxns, error } = await window.ArthivaSupabase.select("transactions");
-        if (!error && Array.isArray(dbTxns) && dbTxns.length > 0) {
-          console.log("[Supabase] Synced transactions:", dbTxns.length);
-          if (typeof showToast === "function") {
-            showToast(`Supabase connected (${dbTxns.length} records)`, "success");
-          }
-        }
-      } catch (err) {
-        console.warn("[Supabase] Sync notice:", err.message);
+  if (window.ArthivaSupabase && typeof window.ArthivaSupabase.syncAll === "function") {
+    window.ArthivaSupabase.syncAll(true);
+  }
+
+  // Capacitor Native Back Button listener for Android
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.addListener("backButton", () => {
+      const openModal = document.querySelector(".modal-backdrop.active, .sheet-backdrop.active");
+      if (openModal) {
+        closeAllModalsAndSheets();
+        return;
       }
-    })();
+      if (ArthivaState.currentScreen !== "home") {
+        switchScreen("home");
+        return;
+      }
+      if (confirm("Do you want to exit Arthiva Money?")) {
+        window.Capacitor.Plugins.App.exitApp();
+      }
+    });
   }
 
   // Background visibility lock listener

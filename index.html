@@ -567,7 +567,7 @@
               </div>
 
               <!-- Commitment-At-Risk Alert Card (Warm Amber, Never Shaming) -->
-              <div id="home-alert-card" class="alert-card">
+              <div id="home-alert-card" class="alert-card" style="display: none;">
                 <div class="alert-top">
                   <div class="alert-tag">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -786,14 +786,62 @@
                 </button>
               </div>
 
-              <!-- 10.1 Empty State for Insights (When no transaction history exists yet) -->
-              <div id="insights-empty-state" class="section-empty-state" style="display: none; margin-top: 12px;">
-                <div class="section-empty-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <!-- 1. DUMMY EMPTY STATE (When user has no data yet: shows friendly illustration and locked preview until data arrives) -->
+              <div id="insights-empty-state" class="section-empty-state" style="display: none; margin: 16px 16px 20px 16px; padding: 32px 20px;">
+                <div class="section-empty-icon" style="width: 52px; height: 52px; background: var(--lavender-light); color: var(--primary);">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                    <path d="M4 4l3 3 5-5 5 5 3-3" stroke="var(--primary)" stroke-width="2"></path>
+                  </svg>
                 </div>
-                <div class="section-empty-title">Insights appear after about 2 weeks of transactions</div>
-                <div class="section-empty-desc">Upload a bank statement or log a few expenses to unlock pay-cycle outflow charts and category trends.</div>
-                <button type="button" class="btn-primary" style="width: auto; padding: 0 18px; height: 38px; font-size: 12.5px;" onclick="openImportStatementModal()">Import statement</button>
+                <div class="section-empty-title" style="font-size: 17px; margin-top: 4px;">Your insights will appear here</div>
+                <div class="section-empty-desc" style="max-width: 320px; font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5;">
+                  Add your first entry and we'll start showing trends, patterns and highlights as your data grows.
+                </div>
+                <button type="button" class="btn-primary" style="margin-top: 14px; min-width: 170px;" onclick="switchScreen('home')">
+                  Add your first entry
+                </button>
+                <button type="button" class="section-link" style="font-size: 12.5px; margin-top: 6px; color: var(--primary);" onclick="previewSampleInsights()">
+                  See what insights look like
+                </button>
+
+                <!-- Greyed-out skeleton preview cards showing what will be unlocked -->
+                <div style="width: 100%; margin-top: 24px; display: flex; flex-direction: column; gap: 10px; opacity: 0.55;">
+                  <div style="border: 1px dashed var(--border-strong); border-radius: 12px; padding: 12px 14px; background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 14px;">🔒</span>
+                      <div style="text-align: left;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Weekly & Monthly Trend</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Unlocks after first logged expenses</div>
+                      </div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 2px 8px; border-radius: 6px; background: var(--bg-surface);">Locked</span>
+                  </div>
+
+                  <div style="border: 1px dashed var(--border-strong); border-radius: 12px; padding: 12px 14px; background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 14px;">🔒</span>
+                      <div style="text-align: left;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Top Spending Categories</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Unlocks with category breakdowns</div>
+                      </div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 2px 8px; border-radius: 6px; background: var(--bg-surface);">Locked</span>
+                  </div>
+
+                  <div style="border: 1px dashed var(--border-strong); border-radius: 12px; padding: 12px 14px; background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 14px;">🔒</span>
+                      <div style="text-align: left;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Savings & Pacing Highlights</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Unlocks personalized auto-observations</div>
+                      </div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 2px 8px; border-radius: 6px; background: var(--bg-surface);">Locked</span>
+                  </div>
+                </div>
               </div>
 
               <div id="insights-populated-container">

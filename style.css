@@ -1,4 +1,35 @@
 /* ==========================================================================
+   Android Native Safe Areas, Gestures & Keyboard Adaptation
+   ========================================================================== */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+body {
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+.bottom-nav {
+  padding-bottom: calc(8px + var(--sab)) !important;
+}
+
+input, select, textarea {
+  user-select: auto;
+  -webkit-user-select: auto;
+  scroll-margin-bottom: 120px;
+}
+
+/* ==========================================================================
    ARTHIVA MONEY — DESIGN SYSTEM & COMPONENT STYLES
    Version: 2.0.0 (Production-Grade Interactive Prototype)
    Brand: Arthiva ("Your money. Your home. Your life.")

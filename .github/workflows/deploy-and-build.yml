@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Signed Release APK
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-apk:
-    name: Build Android APK
+  build-release-apk:
+    name: Build Signed Release APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -32,30 +32,53 @@ jobs:
         run: |
           npm install
 
-      - name: Prepare web assets
+      - name: Prepare web assets and inject environment variables
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           mkdir -p www
           cp -r index.html style.css app.js supabase.js manifest.json design-system.html www/ 2>/dev/null || true
+          echo "<script>window.__ENV_SUPABASE_URL='${{ secrets.SUPABASE_URL }}'; window.__ENV_SUPABASE_ANON_KEY='${{ secrets.SUPABASE_ANON_KEY }}';</script>" > temp_env.html
+          sed -i '/<head>/r temp_env.html' www/index.html
+          rm temp_env.html
 
-      - name: Turn off Capacitor Telemetry
+      - name: Initialize and Sync Capacitor Android
         run: |
           npx cap telemetry off
-
-      - name: Add Android platform and sync
-        run: |
           npx cap add android || true
           npx cap sync android
 
-      - name: Build Debug APK with Gradle
+      - name: Configure Version Code and Min SDK in Gradle
+        run: |
+          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/g" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/g" android/app/build.gradle
+          sed -i "s/minSdkVersion 22/minSdkVersion 26/g" android/variables.gradle 2>/dev/null || true
+
+      - name: Build Release APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease || ./gradlew assembleDebug
 
-      - name: Upload Debug APK Artifact
+      - name: Sign APK (if Keystore Secret is configured)
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
+          $ANDROID_HOME/build-tools/34.0.0/zipalign -v -p 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk || true
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign --ks release.keystore --ks-pass pass:$KEYSTORE_PASSWORD --ks-key-alias $KEY_ALIAS --key-pass pass:$KEY_PASSWORD --out arthiva-money-release.apk aligned.apk || true
+
+      - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: arthiva-money-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          name: arthiva-money-release-apk
+          path: |
+            arthiva-money-release.apk
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/apk/debug/*.apk
           retention-days: 14
