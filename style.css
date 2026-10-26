@@ -3646,6 +3646,117 @@ button:focus-visible,
   margin-top: 12px;
 }
 
+/* Unified Standard EmptyState Component */
+.arthiva-empty-state-card {
+  background: #FFFFFF;
+  border: 1px solid #E7E2F3;
+  border-radius: 16px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.arthiva-empty-state-icon-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #F1ECFE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+.arthiva-empty-state-icon-circle svg {
+  width: 24px;
+  height: 24px;
+  stroke: #6A4BE8;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.arthiva-empty-state-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1C1830;
+  line-height: 1.3;
+  margin: 0 0 6px 0;
+}
+
+.arthiva-empty-state-desc {
+  font-size: 13px;
+  line-height: 19px;
+  color: #5E5873;
+  max-width: 280px;
+  margin: 0;
+  text-align: center;
+}
+
+.arthiva-empty-state-btn {
+  margin-top: 20px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: #6A4BE8;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.arthiva-empty-state-btn:hover {
+  opacity: 0.95;
+}
+
+.arthiva-empty-state-btn:active {
+  transform: scale(0.98);
+}
+
+.arthiva-empty-state-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: #FFFFFF;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.arthiva-empty-state-link {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5B3FD6;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  text-decoration: none;
+}
+
+.arthiva-empty-state-link:hover {
+  text-decoration: underline;
+}
+
 /* Empty State Widget */
 .empty-state-box,
 .section-empty-state {

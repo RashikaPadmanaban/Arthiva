@@ -1313,9 +1313,99 @@ function renderHomeScreen(fin) {
   renderHomeGoalWidget();
 }
 
-/**
- * Upcoming bills on Home: Shows only the "Pay (Before <date>)" group (Rule 2.3)
- */
+// ==========================================================================
+// Reusable Standard EmptyState Component
+// ==========================================================================
+
+function getEmptyStateIconSVG(iconName) {
+  switch (iconName) {
+    case "calendar-check":
+      return `
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#6A4BE8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+          <polyline points="9 16 11 18 15 14"></polyline>
+        </svg>
+      `;
+    case "target":
+      return `
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#6A4BE8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+      `;
+    case "receipt":
+      return `
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#6A4BE8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path>
+          <line x1="8" y1="7" x2="16" y2="7"></line>
+          <line x1="8" y1="11" x2="16" y2="11"></line>
+          <line x1="8" y1="15" x2="13" y2="15"></line>
+        </svg>
+      `;
+    case "category":
+    case "shapes":
+      return `
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#6A4BE8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+          <circle cx="17.5" cy="6.5" r="3.5"></circle>
+          <path d="M14 14l3.5 7h-7z"></path>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+        </svg>
+      `;
+    case "chart-bar":
+      return `
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#6A4BE8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+          <line x1="3" y1="20" x2="21" y2="20"></line>
+        </svg>
+      `;
+    default:
+      return `
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#6A4BE8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      `;
+  }
+}
+
+function EmptyState({ icon, title, description, primaryLabel, onPrimary, secondaryLabel, onSecondary }) {
+  const plusIcon = `
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+  `;
+
+  return `
+    <div class="arthiva-empty-state-card">
+      <div class="arthiva-empty-state-icon-circle">
+        ${getEmptyStateIconSVG(icon)}
+      </div>
+      <h3 class="arthiva-empty-state-title">${escapeHTML(title)}</h3>
+      <p class="arthiva-empty-state-desc">${escapeHTML(description)}</p>
+      ${primaryLabel ? `
+        <button type="button" class="arthiva-empty-state-btn" onclick="${escapeHTML(onPrimary || '')}">
+          ${plusIcon}
+          <span>${escapeHTML(primaryLabel)}</span>
+        </button>
+      ` : ''}
+      ${secondaryLabel ? `
+        <button type="button" class="arthiva-empty-state-link" onclick="${escapeHTML(onSecondary || '')}">
+          ${escapeHTML(secondaryLabel)}
+        </button>
+      ` : ''}
+    </div>
+  `;
+}
+
 /**
  * Upcoming bills on Home: Shows next 3 bills due before payday + "See all" link
  */
@@ -1324,14 +1414,13 @@ function renderHomeBillsPreview(cycleCtx) {
   if (!container) return;
 
   if (ArthivaState.isEmptyState || !ArthivaState.commitments || ArthivaState.commitments.length === 0) {
-    container.innerHTML = `
-      <div class="section-empty-state" style="padding:16px 12px;">
-        <div class="se-icon">📅</div>
-        <h4>No bills yet</h4>
-        <p>Add your rent, EMIs, and utility bills so Arthiva can protect them before payday.</p>
-        <button type="button" class="btn-primary" style="width: auto; height: 36px; padding: 0 16px; font-size: 12.5px;" onclick="openAddCommitmentSheet()">Add a bill</button>
-      </div>
-    `;
+    container.innerHTML = EmptyState({
+      icon: "receipt",
+      title: "No bills due before payday",
+      description: "Bills you add will show here when they fall due before your next payday.",
+      primaryLabel: "Add bill",
+      onPrimary: "openAddCommitmentSheet()"
+    });
     return;
   }
 
@@ -1388,14 +1477,13 @@ function renderHomeGoalWidget() {
   const goals = Array.isArray(ArthivaState.goals) ? ArthivaState.goals : [];
 
   if (ArthivaState.isEmptyState || goals.length === 0) {
-    container.innerHTML = `
-      <div class="section-empty-state" style="padding:20px 16px; background:#fff; border-radius:24px; box-shadow:0 4px 20px rgba(109,63,224,0.06); text-align:center;">
-        <div class="se-icon" style="font-size:32px; margin-bottom:8px;">🎯</div>
-        <h4 style="font-size:17px; font-weight:700; color:#111827; margin-bottom:4px;">Start your first savings goal</h4>
-        <p style="font-size:13px; color:#6B7280; line-height:1.45; margin-bottom:16px;">We suggest starting with an <strong>Emergency Medical Buffer</strong> (₹60,000).</p>
-        <button type="button" class="btn-primary" style="width: auto; height: 38px; padding: 0 18px; font-size: 13px;" onclick="openCreateGoalModal()">Create goal</button>
-      </div>
-    `;
+    container.innerHTML = EmptyState({
+      icon: "target",
+      title: "Start your first savings goal",
+      description: "Name what you're saving for and we'll show how much to set aside each pay cycle.",
+      primaryLabel: "Create goal",
+      onPrimary: "openCreateGoalModal()"
+    });
     return;
   }
 
@@ -1639,7 +1727,16 @@ function renderCommitmentsScreen(cycleCtx) {
   const filledContent = document.getElementById("activity-filled-content");
 
   if (ArthivaState.isEmptyState || !ArthivaState.commitments || ArthivaState.commitments.length === 0) {
-    if (emptyCard) emptyCard.style.display = "block";
+    if (emptyCard) {
+      emptyCard.style.display = "block";
+      emptyCard.innerHTML = EmptyState({
+        icon: "calendar-check",
+        title: "Add your first commitment",
+        description: "Rent, EMIs and subscriptions you pay every cycle. We'll set them aside from your safe-to-spend.",
+        primaryLabel: "Add commitment",
+        onPrimary: "openAddCommitmentSheet()"
+      });
+    }
     if (filledContent) filledContent.style.display = "none";
     return;
   } else {
@@ -1768,26 +1865,22 @@ function renderBudgetsScreen(fin) {
 
     if (!hasFlexibleCats) {
       planEmptyEl.style.display = "block";
-      const title = planEmptyEl.querySelector(".section-empty-title");
-      const desc = planEmptyEl.querySelector(".section-empty-desc");
-      const btn = planEmptyEl.querySelector("button");
-      if (title) title.textContent = "Add your first category";
-      if (desc) desc.textContent = "Create a flexible spending category and monthly budget before logging expenses.";
-      if (btn) {
-        btn.textContent = "+ Add category";
-        btn.setAttribute("onclick", "openAddCategoryModal('flexible')");
-      }
+      planEmptyEl.innerHTML = EmptyState({
+        icon: "category",
+        title: "Add your first category",
+        description: "Create a flexible spending category and monthly budget before logging expenses.",
+        primaryLabel: "Add category",
+        onPrimary: "openAddCategoryModal('flexible')"
+      });
     } else if (noExpensesYet) {
       planEmptyEl.style.display = "block";
-      const title = planEmptyEl.querySelector(".section-empty-title");
-      const desc = planEmptyEl.querySelector(".section-empty-desc");
-      const btn = planEmptyEl.querySelector("button");
-      if (title) title.textContent = "Log your first expense";
-      if (desc) desc.textContent = "Track groceries, dining out, transport, or split a purchase across two categories.";
-      if (btn) {
-        btn.textContent = "Quick log";
-        btn.setAttribute("onclick", "openQuickAddExpenseSheet()");
-      }
+      planEmptyEl.innerHTML = EmptyState({
+        icon: "category",
+        title: "Log your first expense",
+        description: "Track groceries, dining out, transport, or split a purchase across two categories.",
+        primaryLabel: "Quick log",
+        onPrimary: "openQuickAddExpenseSheet()"
+      });
     } else {
       planEmptyEl.style.display = "none";
     }
@@ -2153,7 +2246,18 @@ function renderInsightsScreen(fin) {
 
   // DUMMY STATE: When data is not there for a user, show the friendly dummy/locked preview until data arrives
   if (!isDemoOrPopulated) {
-    if (insEmptyCard) insEmptyCard.style.display = "flex";
+    if (insEmptyCard) {
+      insEmptyCard.style.display = "block";
+      insEmptyCard.innerHTML = EmptyState({
+        icon: "chart-bar",
+        title: "Your insights will appear here",
+        description: "Add your first entry and we'll start showing trends, patterns and highlights as your data grows.",
+        primaryLabel: "Add your first entry",
+        onPrimary: "switchScreen('home')",
+        secondaryLabel: "See what insights look like",
+        onSecondary: "previewSampleInsights()"
+      });
+    }
     if (insPopulatedContainer) insPopulatedContainer.style.display = "none";
     return;
   }
