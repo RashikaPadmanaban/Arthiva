@@ -8936,6 +8936,15 @@ function triggerPushNotification() {
   // Banner removed per user request
 }
 
+function updateStatusBarClock() {
+  const timeEl = document.getElementById("device-status-time");
+  if (!timeEl) return;
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  timeEl.textContent = `${hours}:${minutes}`;
+}
+
 // --------------------------------------------------------------------------
 // 20. Workbench & Environment Controls
 // --------------------------------------------------------------------------
@@ -9164,6 +9173,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Initialize Live Status Bar Clock
+  updateStatusBarClock();
+  setInterval(updateStatusBarClock, 10000);
 
   // Restore Workbench Toolbar visibility preference
   initWorkbenchToolbarState();
