@@ -4352,7 +4352,105 @@ button:focus-visible,
   display: block;
 }
 
-/* 6. Auto-Tracking Source Row */
+/* 6. Auto-Tracking Source Row & Custom Switch */
+.auto-track-header-switch-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switch-track {
+  width: 44px;
+  height: 24px;
+  border-radius: 24px;
+  background-color: #D1D1DB;
+  position: relative;
+  transition: background-color 0.2s ease;
+  display: block;
+}
+
+.switch-track:before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.auto-track-header-switch-btn[aria-checked="true"] .switch-track,
+.source-switch-btn[aria-checked="true"] .switch-track {
+  background-color: #6A4BE8;
+}
+
+.auto-track-header-switch-btn[aria-checked="true"] .switch-track:before,
+.source-switch-btn[aria-checked="true"] .switch-track:before {
+  transform: translateX(20px);
+}
+
+.source-switch-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.auto-track-sources-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #5E5873;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.auto-track-source-card {
+  border: 1px solid #EBE4FF;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: #FFFFFF;
+}
+
+.source-status-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.source-status-chip.connected {
+  background: #E3F4EC;
+  color: #126B47;
+}
+
+.source-status-chip.not-connected {
+  background: #F3F3F7;
+  color: #5E5873;
+}
+
 .source-control-card {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);

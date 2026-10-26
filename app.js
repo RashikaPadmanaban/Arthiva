@@ -534,38 +534,38 @@ const DEFAULT_STATE = {
       bank: {
         id: "bank",
         name: "Bank Account / UPI (RBI AA)",
-        subtitle: "HDFC Bank ···4821 via Sahamati AA",
+        subtitle: "Link accounts through an RBI-licensed Account Aggregator",
         enabled: false,
         connectedAt: null,
         lastSync: null,
-        modeBadge: "Simulated AA Feed"
+        modeBadge: "RBI Account Aggregator"
       },
       sms: {
         id: "sms",
         name: "SMS Transaction Alerts",
-        subtitle: "Bank debit & UPI SMS parser",
+        subtitle: "Read bank debit and UPI alerts on this phone",
         enabled: false,
         connectedAt: null,
         lastSync: null,
-        modeBadge: "Parser Sandbox (Android SMS API)"
+        modeBadge: "Local SMS Parser"
       },
       gmail: {
         id: "gmail",
         name: "Gmail Receipts & Bills",
-        subtitle: "Read-only invoice & statement parser",
+        subtitle: "Read-only access to invoices and statements",
         enabled: false,
         connectedAt: null,
         lastSync: null,
-        modeBadge: "Simulated OAuth Feed"
+        modeBadge: "Google OAuth (Read-only)"
       },
       whatsapp: {
         id: "whatsapp",
         name: "WhatsApp Payment & Merchant Alerts",
-        subtitle: "Verified merchant & utility receipts",
+        subtitle: "Verified merchant and utility receipts",
         enabled: false,
         connectedAt: null,
         lastSync: null,
-        modeBadge: "Notification Parser"
+        modeBadge: "Notification Reader"
       }
     },
     detectedQueue: []
@@ -6363,41 +6363,124 @@ const SAMPLE_RAW_NOTIFICATIONS = [
   }
 ];
 
+function handleMasterAutoTrackSwitchClick() {
+  const at = ArthivaState.autoTracking;
+  if (!at.masterEnabled) {
+    requestTurnOnAutoTracking();
+  } else {
+    turnOffAutoTracking();
+  }
+}
+
+function requestTurnOnAutoTracking() {
+  openBottomSheet("turn-on-auto-track-sheet");
+}
+
+function confirmTurnOnAutoTracking() {
+  const at = ArthivaState.autoTracking;
+  at.masterEnabled = true;
+  at.consentVerified = true;
+  at.consentTimestamp = new Date().toISOString();
+  saveStateToStorage();
+  closeBottomSheet("turn-on-auto-track-sheet");
+  renderAutoTrackingProfileSection();
+  showToast("Automatic expense tracking turned on.");
+}
+
+function turnOffAutoTracking() {
+  const at = ArthivaState.autoTracking;
+  at.masterEnabled = false;
+  // Switch every source off and stop data access
+  Object.values(at.sources).forEach(s => {
+    s.enabled = false;
+  });
+  saveStateToStorage();
+  renderAutoTrackingProfileSection();
+  showToast("Automatic expense tracking turned off.");
+}
+
 function renderAutoTrackingProfileSection() {
   const at = ArthivaState.autoTracking;
-  const masterToggle = document.getElementById("master-auto-track-toggle");
+  const masterSwitch = document.getElementById("master-auto-track-switch");
+  const collapsedEl = document.getElementById("auto-track-collapsed-state");
+  const expandedEl = document.getElementById("auto-track-expanded-container");
   const sourcesContainer = document.getElementById("auto-track-sources-list");
+  const countEl = document.getElementById("auto-track-sources-count");
   const badgeEl = document.getElementById("auto-detected-count-badge");
 
-  if (masterToggle) masterToggle.checked = !!at.masterEnabled;
+  const isMasterOn = !!at.masterEnabled;
+
+  if (masterSwitch) {
+    masterSwitch.setAttribute("aria-checked", isMasterOn ? "true" : "false");
+  }
+
+  if (collapsedEl) {
+    collapsedEl.style.display = isMasterOn ? "none" : "flex";
+  }
+
+  if (expandedEl) {
+    expandedEl.style.display = isMasterOn ? "block" : "none";
+  }
+
+  const enabledCount = Object.values(at.sources).filter(s => s.enabled).length;
+  if (countEl) {
+    countEl.textContent = `SOURCES · ${enabledCount} OF 4 ON`;
+  }
 
   const pendingCount = (at.detectedQueue || []).filter(item => item.type === "expense" && !item.imported).length;
   if (badgeEl) badgeEl.textContent = `${pendingCount} new`;
 
   if (!sourcesContainer) return;
 
-  sourcesContainer.innerHTML = Object.values(at.sources).map(src => {
-    const isEnabled = at.masterEnabled && src.enabled;
+  const sourceDefinitions = [
+    {
+      id: "bank",
+      title: "Bank Account / UPI (RBI AA)",
+      desc: "Link accounts through an RBI-licensed Account Aggregator"
+    },
+    {
+      id: "sms",
+      title: "SMS Transaction Alerts",
+      desc: "Read bank debit and UPI alerts on this phone"
+    },
+    {
+      id: "gmail",
+      title: "Gmail Receipts & Bills",
+      desc: "Read-only access to invoices and statements"
+    },
+    {
+      id: "whatsapp",
+      title: "WhatsApp Payment & Merchant Alerts",
+      desc: "Verified merchant and utility receipts"
+    }
+  ];
+
+  sourcesContainer.innerHTML = sourceDefinitions.map(def => {
+    const src = at.sources[def.id] || { id: def.id, enabled: false };
+    const isSourceOn = isMasterOn && !!src.enabled;
+
     return `
-      <div class="source-control-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-size:12.5px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
-              <span>${escapeHTML(src.name)}</span>
-              <span class="status-pill ${isEnabled ? 'within' : 'neutral'}">${isEnabled ? 'Connected' : 'Off'}</span>
+      <div class="auto-track-source-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); line-height: 1.3;">
+              ${escapeHTML(def.title)}
             </div>
-            <div style="font-size:11px;color:var(--text-muted);">${escapeHTML(src.subtitle)}</div>
+            <div style="font-size: 12px; color: #5E5873; line-height: 1.4; margin-top: 3px;">
+              ${escapeHTML(def.desc)}
+            </div>
           </div>
-          <label class="toggle-switch">
-            <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleIndividualSource('${src.id}', this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
+          <button type="button" role="switch" aria-checked="${isSourceOn ? 'true' : 'false'}" aria-label="${escapeHTML(def.title)}" class="source-switch-btn" onclick="toggleIndividualSource('${def.id}', ${!isSourceOn})">
+            <span class="switch-track"></span>
+          </button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--text-muted);padding-top:4px;border-top:1px dashed var(--border-subtle);">
-          <span>Mode: <strong>${escapeHTML(src.modeBadge)}</strong> ${src.lastSync ? '· Synced ' + src.lastSync : ''}</span>
-          ${isEnabled
-            ? `<button type="button" class="section-link destructive-link" onclick="disconnectDataSource('${src.id}')">Disconnect</button>`
-            : `<button type="button" class="section-link" style="font-size:11px;" onclick="openAutoTrackConsentWizard('${src.id}')">Configure →</button>`}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid #F0ECFC;">
+          <span class="source-status-chip ${isSourceOn ? 'connected' : 'not-connected'}">
+            ${isSourceOn ? 'Connected' : 'Not connected'}
+          </span>
+          <button type="button" class="section-link" style="font-size: 11.5px; color: #6A4BE8; font-weight: 600; text-decoration: none; padding: 4px 0;" onclick="openAutoTrackConsentWizard('${def.id}')">
+            Configure →
+          </button>
         </div>
       </div>
     `;
@@ -6405,50 +6488,39 @@ function renderAutoTrackingProfileSection() {
 }
 
 function onMasterAutoTrackToggle(checked) {
-  const at = ArthivaState.autoTracking;
-  if (!checked) {
-    at.masterEnabled = false;
-    Object.values(at.sources).forEach(s => { s.enabled = false; });
-    renderApp();
-    showToast("Automatic expense tracking disabled across all sources.");
-    return;
-  }
-
-  if (!at.consentVerified) {
-    // Revert checkbox until multi-step verification & consent completes
-    const masterToggle = document.getElementById("master-auto-track-toggle");
-    if (masterToggle) masterToggle.checked = false;
-    openAutoTrackConsentWizard("bank");
+  if (checked) {
+    requestTurnOnAutoTracking();
   } else {
-    at.masterEnabled = true;
-    renderApp();
-    showToast("Automatic expense tracking enabled.");
+    turnOffAutoTracking();
   }
 }
 
-function toggleIndividualSource(sourceId, checked) {
+function toggleIndividualSource(sourceId, targetState) {
   const at = ArthivaState.autoTracking;
   const src = at.sources[sourceId];
   if (!src) return;
 
-  if (!checked) {
+  if (targetState === undefined) {
+    targetState = !src.enabled;
+  }
+
+  if (!targetState) {
     src.enabled = false;
-    const anyStillEnabled = Object.values(at.sources).some(s => s.enabled);
-    if (!anyStillEnabled) at.masterEnabled = false;
-    renderApp();
-    showToast(`Disconnected ${src.name}.`);
+    saveStateToStorage();
+    renderAutoTrackingProfileSection();
+    showToast(`Turned off ${src.name}.`);
     return;
   }
 
-  if (!at.consentVerified || !src.connectedAt) {
-    renderAutoTrackingProfileSection();
+  // Turning on: Each source runs its own permission/OAuth flow when switched on
+  if (!src.connectedAt) {
     openAutoTrackConsentWizard(sourceId);
   } else {
-    at.masterEnabled = true;
     src.enabled = true;
     src.lastSync = "Just now";
-    renderApp();
-    showToast(`${src.name} active.`);
+    saveStateToStorage();
+    renderAutoTrackingProfileSection();
+    showToast(`${src.name} connected.`);
   }
 }
 
@@ -6460,11 +6532,9 @@ function disconnectDataSource(sourceId) {
   src.enabled = false;
   src.connectedAt = null;
   src.lastSync = null;
-  if (!Object.values(at.sources).some(s => s.enabled)) {
-    at.masterEnabled = false;
-  }
-  renderApp();
-  showToast(`Revoked permission and disconnected ${src.name}.`);
+  saveStateToStorage();
+  renderAutoTrackingProfileSection();
+  showToast(`Disconnected ${src.name}.`);
 }
 
 function openAutoTrackConsentWizard(targetSourceId) {
