@@ -766,10 +766,12 @@ function getValidDateInMonth(year, month, targetDay) {
 
 function getPayCycleContext() {
   const payday = ArthivaState.cycleConfig.paydayDay || 1;
-  const refDate = new Date(ArthivaState.cycleConfig.referenceDate + "T12:00:00");
-  const currentYear = refDate.getFullYear();
-  const currentMonth = refDate.getMonth();
-  const currentDay = refDate.getDate();
+  const nowToday = new Date();
+  nowToday.setHours(0, 0, 0, 0);
+
+  const currentYear = nowToday.getFullYear();
+  const currentMonth = nowToday.getMonth();
+  const currentDay = nowToday.getDate();
 
   let cycleStart, cycleEnd;
 
@@ -782,12 +784,10 @@ function getPayCycleContext() {
   }
 
   const msPerDay = 1000 * 60 * 60 * 24;
-  const nowToday = new Date();
-  nowToday.setHours(0, 0, 0, 0);
 
   const daysTotal = Math.max(1, Math.round((cycleEnd - cycleStart) / msPerDay));
   const daysElapsed = Math.max(1, Math.min(daysTotal, Math.round((nowToday - cycleStart) / msPerDay) + 1));
-  const daysLeft = Math.max(1, Math.round((cycleEnd - nowToday) / msPerDay));
+  const daysLeft = Math.max(0, Math.round((cycleEnd - nowToday) / msPerDay));
   const percentElapsed = Math.min(100, Math.round((daysElapsed / daysTotal) * 100));
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -1302,6 +1302,16 @@ function renderHomeScreen(fin) {
         alertMsgEl.textContent = `At this pace you'll be ${formatINR(shortAmt)} short for ${bName} on ${bDate}.`;
       }
     }
+  }
+
+  // Pay Cycle Banner dates and days left
+  const cycleDatesLabel = document.getElementById("pay-cycle-dates-label");
+  const cycleDaysLeftBadge = document.getElementById("pay-cycle-days-left-badge");
+  if (cycleDatesLabel) {
+    cycleDatesLabel.textContent = `Pay Cycle: ${fin.cycleCtx.startStr} – ${fin.cycleCtx.endStr}`;
+  }
+  if (cycleDaysLeftBadge) {
+    cycleDaysLeftBadge.textContent = `${fin.daysLeft} ${fin.daysLeft === 1 ? 'day' : 'days'} left`;
   }
 
   // Next 3 Bills Due Before Payday Preview
