@@ -1075,11 +1075,14 @@ function renderAvatarIntoElement(el, user) {
   } else if (user.avatarType === "illustrated" && ILLUSTRATED_AVATARS[user.avatarData]) {
     el.innerHTML = ILLUSTRATED_AVATARS[user.avatarData].svg;
   } else {
-    const initials = (user.avatarData && user.avatarData.length <= 3)
-      ? user.avatarData
-      : (user.name || "Rashika").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+    let monogram = "A";
+    if (user.name && user.name.trim()) {
+      monogram = user.name.trim().charAt(0).toUpperCase();
+    } else if (user.avatarData && user.avatarData.length <= 3) {
+      monogram = user.avatarData.trim().charAt(0).toUpperCase() || "A";
+    }
     el.innerHTML = "";
-    el.textContent = initials || "RP";
+    el.textContent = monogram;
   }
 }
 
@@ -4934,6 +4937,10 @@ function saveProfileDetails() {
   const newCity = cityInput ? cityInput.value.trim() : "";
 
   u.name = newName;
+  if (!u.avatarType || u.avatarType === "monogram") {
+    u.avatarType = "monogram";
+    u.avatarData = newName ? newName.charAt(0).toUpperCase() : "A";
+  }
   u.email = newEmail;
   u.mobile = newMobile;
   u.householdName = newHousehold || (newName ? `${newName}'s Household` : "");
