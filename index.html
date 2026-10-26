@@ -172,7 +172,7 @@
             <div id="screen-auth" class="app-screen">
               <div class="auth-container">
                 <div>
-                  <div class="auth-header">
+                  <div class="auth-header" style="text-align: center;">
                     <div class="brand-icon-circle">
                       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 3L4 18h4.5l2-4h3l2 4H20L12 3z" fill="rgba(255,255,255,0.2)"/>
@@ -180,35 +180,34 @@
                         <path d="M9.5 8h5"/>
                       </svg>
                     </div>
-                    <h2 style="font-family: var(--font-display); font-size: 24px; font-weight: 800;">Arthiva Money</h2>
-                    <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Plan today, a brighter tomorrow.</p>
+                    <h2 style="font-family: var(--font-display); font-size: 24px; font-weight: 800; text-align: center; margin: 0 auto;">Arthiva Money</h2>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px; text-align: center;">Plan today, a brighter tomorrow.</p>
                   </div>
 
-                  <!-- 1. Welcome Screen -->
-                  <div id="auth-welcome-view" style="text-align: center; padding: 12px 0 8px 0;">
-                    <div class="card" style="margin: 0 0 18px 0; padding: 18px 16px; background: var(--bg-subtle); border: 1px solid var(--border-subtle); text-align: left;">
-                      <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
-                        Know what is safe to spend before payday.
+                  <!-- 1. Minimal Welcome Screen -->
+                  <div id="auth-welcome-view" class="auth-welcome-minimal">
+                    <div class="auth-welcome-hero">
+                      <div class="auth-minimal-app-icon">
+                        <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 3L4 18h4.5l2-4h3l2 4H20L12 3z" fill="rgba(255,255,255,0.24)"/>
+                          <path d="M8.5 11h7"/>
+                          <path d="M9.5 8h5"/>
+                        </svg>
                       </div>
-                      <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
-                        Arthiva protects your rent, EMIs, SIPs, upcoming bills, and savings goals first—so you always know what you can freely spend today.
+                      <h1 class="auth-minimal-title">Arthiva Money</h1>
+                      <p class="auth-minimal-subtitle">
+                        Know what's safe to spend<br>before payday.
                       </p>
-                      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                        <span class="chip-tag paid">✓ India-First (₹)</span>
-                        <span class="chip-tag auto-debit">✓ Payday-to-Payday</span>
-                        <span class="chip-tag">✓ Privacy-First</span>
-                      </div>
                     </div>
 
-                    <button id="btn-welcome-get-started" type="button" class="btn-primary" style="margin-bottom: 10px;" onclick="openAuthCredentialsView('signup')">
-                      Get started
-                    </button>
-                    <button id="btn-welcome-sample" type="button" class="btn-secondary" style="margin-bottom: 10px;" onclick="continueAsDemoUser()">
-                      See a sample
-                    </button>
-                    <button id="btn-welcome-existing-user" type="button" class="btn-secondary" style="border: none; background: transparent; font-size: 13px;" onclick="openAuthCredentialsView('signin')">
-                      I already have an account
-                    </button>
+                    <div class="auth-welcome-actions">
+                      <button id="btn-welcome-get-started" type="button" class="btn-primary auth-minimal-btn-primary" onclick="openAuthCredentialsView('signup')">
+                        Get started
+                      </button>
+                      <button id="btn-welcome-existing-user" type="button" class="auth-minimal-btn-link" onclick="openAuthCredentialsView('signin')">
+                        I already have an account
+                      </button>
+                    </div>
                   </div>
 
                   <!-- 2. Authentication Screen (OVERRIDES earlier step 9.2: Mobile number default + Email tabs) -->
@@ -2096,12 +2095,9 @@
               <h3 id="gdetail-title">Goa trip with friends</h3>
               <p id="gdetail-status-sub">Target Completion: March 2027 · On Track</p>
             </div>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <button type="button" class="bcat-delete-btn" style="width: 36px; height: 36px;" onclick="deleteSelectedGoalFromDetail()" title="Delete goal" aria-label="Delete goal">✕</button>
-              <button type="button" class="icon-btn" onclick="closeBottomSheet('goal-detail-sheet')" aria-label="Close goal details">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-            </div>
+            <button type="button" class="icon-btn" onclick="closeBottomSheet('goal-detail-sheet')" aria-label="Close goal details">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           </div>
 
           <div id="gdetail-body-content">

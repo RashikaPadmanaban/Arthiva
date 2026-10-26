@@ -7129,8 +7129,19 @@ function showOnlyAuthSubView(viewId) {
   ];
   ids.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = (id === viewId) ? "block" : "none";
+    if (el) {
+      if (id === viewId) {
+        el.style.display = (id === "auth-welcome-view") ? "flex" : "block";
+      } else {
+        el.style.display = "none";
+      }
+    }
   });
+
+  const authHeader = document.querySelector(".auth-header");
+  if (authHeader) {
+    authHeader.style.display = (viewId === "auth-welcome-view") ? "none" : "block";
+  }
 }
 
 function showAuthWelcomeView() {
