@@ -1813,7 +1813,7 @@
 
 
         <!-- ==========================================================
-             BOTTOM SHEET 4: COMMITMENT-AT-RISK ADVISOR
+             BOTTOM SHEET 4: COMMITMENT-AT-RISK ADVISOR / PACING GUIDANCE
              ========================================================== -->
         <div id="risk-resolution-sheet" class="bottom-sheet">
           <div class="sheet-handle"></div>
@@ -1825,59 +1825,8 @@
             <button class="icon-btn" onclick="closeBottomSheet('risk-resolution-sheet')">✕</button>
           </div>
 
-          <div class="alert-card" style="margin: 0 0 16px 0;">
-            <div class="alert-msg">
-              "You may be ₹2,400 short for your ₹7,000 insurance renewal on October 28."
-            </div>
-            <p style="font-size: 12px; color: var(--state-risk-text); line-height: 1.4;">
-              At your current daily spending pace (~₹1,450/day), your projected balance on 28 Oct will be ₹4,600, leaving a ₹2,400 shortfall for the full ₹7,000 premium.
-            </p>
-          </div>
-
-          <div class="section-header" style="padding: 0 0 8px 0;">
-            <span class="section-title">Actionable Options:</span>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
-            <!-- Recommended Option (Single-tap primary action) -->
-            <div class="card card-tappable" style="margin: 0; padding: 14px; border: 1.5px solid var(--primary); background: var(--bg-surface);" onclick="applyPacingAdjustment()">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <strong style="color: var(--primary);">Recommended: Adjust Daily Spending</strong>
-                <span class="chip-tag auto-debit">1-Tap Fix</span>
-              </div>
-              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35; margin-bottom: 10px;">
-                Keep flexible spend under <strong>₹1,050/day</strong> for the next 12 days. Saves ₹2,400 and ensures 100% insurance coverage.
-              </p>
-              <button type="button" class="btn-primary" style="height: 36px; font-size: 12.5px;">
-                Apply 1-Tap Adjustment
-              </button>
-            </div>
-
-            <!-- Collapsed Alternative Options -->
-            <div style="margin-top: 4px;">
-              <button type="button" class="section-link" style="font-size: 12px; color: var(--text-secondary);" onclick="toggleOtherPacingOptions()">
-                <span id="other-pacing-options-label">Other options (2) ▼</span>
-              </button>
-              <div id="other-pacing-options-drawer" style="display: none; flex-direction: column; gap: 8px; margin-top: 8px;">
-                <div class="card card-tappable" style="margin: 0; padding: 12px;" onclick="applySavingsAdjustment()">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <strong>Option 2: Adjust Savings Goals</strong>
-                  </div>
-                  <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
-                    Temporarily set aside ₹2,600 instead of ₹5,000 for Goa trip this cycle. Frees ₹2,400; extends trip target date by 1 month.
-                  </p>
-                </div>
-
-                <div class="card card-tappable" style="margin: 0; padding: 12px;" onclick="applyGracePeriodShift()">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <strong>Option 3: Use Grace Period</strong>
-                  </div>
-                  <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
-                    HDFC policy has a 15-day premium grace period ending 12 Nov without coverage lapse. Shift payment date to 2 Nov after salary credit.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div id="pacing-guidance-content">
+            <!-- Dynamically populated via renderPacingGuidanceSheet() based on user data -->
           </div>
         </div>
 

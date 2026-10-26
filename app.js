@@ -1294,8 +1294,12 @@ function renderHomeScreen(fin) {
       const hasShortfall = fin.safeToSpend < 0 || (fin.dailyRate < 500 && fin.safeToSpend > 0 && ArthivaState.expenses.length > 0);
       alertCard.style.display = hasShortfall ? "flex" : "none";
       const alertMsgEl = document.getElementById("home-alert-msg");
-      if (alertMsgEl) {
-        alertMsgEl.textContent = `At this pace you'll be ₹2,400 short for your insurance renewal on 28 Oct.`;
+      if (alertMsgEl && hasShortfall) {
+        const pacingInfo = calculatePacingGuidanceData();
+        const bName = pacingInfo.targetBill ? pacingInfo.targetBill.name : "upcoming obligations";
+        const bDate = pacingInfo.targetBill ? (pacingInfo.targetBill.dueDateFormatted || pacingInfo.targetBill.dueDate) : fin.cycleCtx.endStr;
+        const shortAmt = pacingInfo.isShortfall ? pacingInfo.shortfallAmount : 2400;
+        alertMsgEl.textContent = `At this pace you'll be ${formatINR(shortAmt)} short for ${bName} on ${bDate}.`;
       }
     }
   }
@@ -4685,7 +4689,9 @@ function toggleOtherPacingOptions() {
 // --------------------------------------------------------------------------
 
 function applyRecommendedShortfallFix() {
-  applyPacingAdjustment();
+  const pacingInfo = calculatePacingGuidanceData();
+  const recLimit = pacingInfo.recommendedDailyLimit > 0 ? pacingInfo.recommendedDailyLimit : 1050;
+  applyPacingAdjustment(recLimit);
 }
 
 function updateGuidedNextStepContent() {
@@ -4765,39 +4771,213 @@ function openQuickBillModal() {
   openAddCommitmentSheet();
 }
 
+function calculatePacingGuidanceData() {
+  const fin = calculateFinancials();
+  const cycleCtx = fin.cycleCtx;
+  const daysLeft = Math.max(1, cycleCtx.daysLeft || 1);
+  const daysElapsed = Math.max(1, cycleCtx.daysElapsed || 1);
+
+  // Calculate actual daily spending pace this cycle
+  const actualDiscretionarySpent = (ArthivaState.expenses || [])
+    .filter(e => {
+      if (!e.date) return true;
+      const expD = new Date(e.date + "T00:00:00");
+      return expD >= cycleCtx.cycleStart && expD <= cycleCtx.cycleEnd;
+    })
+    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+  const dailyPace = Math.round(actualDiscretionarySpent / daysElapsed) || 0;
+
+  // Find upcoming bill before payday (prioritize one marked isAtRisk or highest amount)
+  const upcomingBills = (ArthivaState.commitments || [])
+    .filter(c => c.status === "upcoming" && classifyBillTiming(c, cycleCtx) === "before_payday");
+  
+  const targetBill = upcomingBills.find(c => c.isAtRisk) || upcomingBills.sort((a, b) => b.amount - a.amount)[0] || null;
+
+  // Primary goal for potential savings adjustment
+  const hasGoals = Array.isArray(ArthivaState.goals) && ArthivaState.goals.length > 0;
+  const primaryGoal = hasGoals ? ArthivaState.goals[0] : null;
+
+  const isShortfall = fin.safeToSpend < 0;
+  const shortfallAmount = Math.abs(fin.safeToSpend);
+
+  // If there's a shortfall, calculate the recommended daily pace to make up for it
+  let recommendedDailyLimit = 0;
+  if (isShortfall) {
+    // Current available funds for remaining days
+    const availableForDays = Math.max(0, fin.currentBalance - fin.billsBeforePayday - (fin.savingsToSetAside || 0));
+    recommendedDailyLimit = Math.max(0, Math.floor(availableForDays / daysLeft));
+  } else {
+    recommendedDailyLimit = Math.max(0, Math.round(fin.safeToSpend / daysLeft));
+  }
+
+  return {
+    fin,
+    cycleCtx,
+    daysLeft,
+    daysElapsed,
+    actualDiscretionarySpent,
+    dailyPace,
+    targetBill,
+    primaryGoal,
+    isShortfall,
+    shortfallAmount,
+    recommendedDailyLimit
+  };
+}
+
+function renderPacingGuidanceSheet() {
+  const container = document.getElementById("pacing-guidance-content");
+  if (!container) return;
+
+  const data = calculatePacingGuidanceData();
+  const { fin, cycleCtx, daysLeft, dailyPace, targetBill, primaryGoal, isShortfall, shortfallAmount, recommendedDailyLimit } = data;
+
+  if (ArthivaState.isEmptyState || (fin.safeToSpend >= 0 && !targetBill && (!ArthivaState.expenses || ArthivaState.expenses.length === 0))) {
+    container.innerHTML = `
+      <div style="padding: 24px 16px; text-align: center;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #E3F4EC; color: #126B47; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 12px;">✓</div>
+        <h4 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Spending is on track</h4>
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.4; max-width: 320px; margin: 0 auto 16px auto;">
+          Safe to spend is healthy at ${formatINR(fin.safeToSpend)}. Add more expenses, bills or goals to see tailored real-time pacing adjustments.
+        </p>
+        <button type="button" class="btn-secondary" style="width: 100%; height: 40px;" onclick="closeBottomSheet('risk-resolution-sheet')">Done</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Format dynamic dates and names
+  const billName = targetBill ? targetBill.name : "upcoming commitments";
+  const billAmount = targetBill ? targetBill.amount : (fin.billsBeforePayday || shortfallAmount);
+  const billDueDate = targetBill ? (targetBill.dueDateFormatted || targetBill.dueDate) : cycleCtx.endStr;
+  const projectedBalanceAtBill = Math.max(0, fin.currentBalance - (dailyPace * Math.max(1, daysLeft / 2)));
+  const computedShortfall = isShortfall ? shortfallAmount : (billAmount > projectedBalanceAtBill ? billAmount - projectedBalanceAtBill : 0);
+
+  let bannerQuote = "";
+  let bannerBody = "";
+
+  if (computedShortfall > 0) {
+    bannerQuote = `"You may be ${formatINR(computedShortfall)} short for your ${formatINR(billAmount)} ${billName} on ${billDueDate}."`;
+    bannerBody = `At your current daily spending pace (~${formatINR(dailyPace)}/day), your projected balance before payday will leave a ${formatINR(computedShortfall)} shortfall for your commitments.`;
+  } else {
+    bannerQuote = `"Your spending is currently paced at ~${formatINR(dailyPace)}/day."`;
+    bannerBody = `With ${daysLeft} days remaining till payday (${cycleCtx.endStr}), maintaining this pace preserves your ${formatINR(fin.safeToSpend)} safe-to-spend buffer.`;
+  }
+
+  const recDailySpend = recommendedDailyLimit > 0 ? recommendedDailyLimit : Math.max(250, Math.round(fin.safeToSpend / daysLeft));
+  const savingsGoalFreed = Math.min(computedShortfall || 2400, primaryGoal ? Math.round(primaryGoal.monthlyAllocation * 0.5) : 2400);
+  const adjustedGoalAllocation = primaryGoal ? Math.max(0, primaryGoal.monthlyAllocation - savingsGoalFreed) : 2600;
+
+  container.innerHTML = `
+    <div class="alert-card" style="margin: 0 0 16px 0;">
+      <div class="alert-msg">
+        ${escapeHTML(bannerQuote)}
+      </div>
+      <p style="font-size: 12px; color: var(--state-risk-text); line-height: 1.4; margin-top: 6px;">
+        ${escapeHTML(bannerBody)}
+      </p>
+    </div>
+
+    <div class="section-header" style="padding: 0 0 8px 0;">
+      <span class="section-title">Actionable Options:</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+      <!-- Recommended Option (Single-tap primary action) -->
+      <div class="card card-tappable" style="margin: 0; padding: 14px; border: 1.5px solid var(--primary); background: var(--bg-surface);" onclick="applyPacingAdjustment(${recDailySpend})">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <strong style="color: var(--primary);">Recommended: Adjust Daily Spending</strong>
+          <span class="chip-tag auto-debit">1-Tap Fix</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35; margin-bottom: 10px;">
+          Keep flexible spend under <strong>${formatINR(recDailySpend)}/day</strong> for the next ${daysLeft} days. ${computedShortfall > 0 ? `Saves ${formatINR(computedShortfall)} and ensures 100% coverage.` : `Keeps you well within budget.`}
+        </p>
+        <button type="button" class="btn-primary" style="height: 36px; font-size: 12.5px;">
+          Apply 1-Tap Adjustment (${formatINR(recDailySpend)}/day)
+        </button>
+      </div>
+
+      <!-- Collapsed Alternative Options -->
+      <div style="margin-top: 4px;">
+        <button type="button" class="section-link" style="font-size: 12px; color: var(--text-secondary);" onclick="toggleOtherPacingOptions()">
+          <span id="other-pacing-options-label">Other options (2) ▼</span>
+        </button>
+        <div id="other-pacing-options-drawer" style="display: none; flex-direction: column; gap: 8px; margin-top: 8px;">
+          ${primaryGoal ? `
+          <div class="card card-tappable" style="margin: 0; padding: 12px;" onclick="applyDynamicSavingsAdjustment(${adjustedGoalAllocation}, '${escapeHTML(primaryGoal.title || 'Goal')}')">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong>Option 2: Adjust Savings Goals</strong>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+              Temporarily set aside ${formatINR(adjustedGoalAllocation)} instead of ${formatINR(primaryGoal.monthlyAllocation)} for ${escapeHTML(primaryGoal.title)} this cycle. Frees ${formatINR(savingsGoalFreed)}; protects your commitments.
+            </p>
+          </div>
+          ` : `
+          <div class="card card-tappable" style="margin: 0; padding: 12px;" onclick="applySavingsAdjustment()">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong>Option 2: Adjust Savings Goals</strong>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+              Temporarily set aside ₹2,600 instead of ₹5,000 for your primary goal this cycle. Frees ₹2,400 to buffer unexpected spend.
+            </p>
+          </div>
+          `}
+
+          <div class="card card-tappable" style="margin: 0; padding: 12px;" onclick="applyDynamicGracePeriodShift('${targetBill ? targetBill.id : 'bill-3'}')">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong>Option 3: Use Grace Period / Shift Due Date</strong>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+              ${targetBill && targetBill.hasGracePeriod
+                ? `${escapeHTML(targetBill.name)} has an allowable grace period until ${targetBill.gracePeriodEndDate || 'early next cycle'}. Shift to after payday (${cycleCtx.endStr}) without lapse.`
+                : `Shift ${escapeHTML(billName)} payment date to after payday (${cycleCtx.endStr}) once fresh salary credits.`}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function openRiskResolutionSheet() {
+  renderPacingGuidanceSheet();
   openBottomSheet("risk-resolution-sheet");
 }
 
-function applyPacingAdjustment() {
-  ArthivaState.appliedAdjustments.customDailyLimit = 1050;
+function applyPacingAdjustment(customAmount) {
+  const amt = customAmount !== undefined ? customAmount : 1050;
+  ArthivaState.appliedAdjustments.customDailyLimit = amt;
   closeBottomSheet("risk-resolution-sheet");
   renderApp();
-  showToast("Pacing guidance applied: Daily limit set to ₹1,050/day.");
+  showToast(`Pacing guidance applied: Daily limit set to ${formatINR(amt)}/day.`);
 }
 
-function applySavingsAdjustment() {
+function applyDynamicSavingsAdjustment(newAllocation, goalTitle) {
+  const targetAlloc = newAllocation !== undefined ? newAllocation : 2600;
   if (ArthivaState.goals && ArthivaState.goals[0]) {
-    ArthivaState.goals[0].monthlyAllocation = 2600;
+    ArthivaState.goals[0].monthlyAllocation = targetAlloc;
   }
-  ArthivaState.goal.monthlyAllocation = 2600;
+  if (ArthivaState.goal) {
+    ArthivaState.goal.monthlyAllocation = targetAlloc;
+  }
   ArthivaState.appliedAdjustments.savingsDeferred = true;
   closeBottomSheet("risk-resolution-sheet");
   renderApp();
-  showToast("Adjusted Goa goal to ₹2,600 this cycle. Insurance is now fully covered!");
+  showToast(`Adjusted ${goalTitle || 'goal'} to ${formatINR(targetAlloc)} this cycle. Commitments are now covered!`);
 }
 
-function applyGracePeriodShift() {
-  const insurance = ArthivaState.commitments.find(c => c.id === "bill-3");
-  if (insurance) {
-    insurance.dueDate = "2026-11-02";
-    insurance.dueDateFormatted = "2 Nov";
-    insurance.isAtRisk = false;
+function applyDynamicGracePeriodShift(targetBillId) {
+  const bill = (ArthivaState.commitments || []).find(c => c.id === targetBillId) || (ArthivaState.commitments || []).find(c => c.id === "bill-3");
+  if (bill) {
+    bill.dueDate = "2026-11-02";
+    bill.dueDateFormatted = "2 Nov";
+    bill.isAtRisk = false;
   }
   ArthivaState.appliedAdjustments.gracePeriodUsed = true;
   closeBottomSheet("risk-resolution-sheet");
   renderApp();
-  showToast("Insurance shifted to 2 Nov (after payday) under verified grace period.");
+  showToast(`Shifted ${bill ? bill.name : 'bill'} to 2 Nov (after payday).`);
 }
 
 // --------------------------------------------------------------------------
