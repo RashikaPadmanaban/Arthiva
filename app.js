@@ -662,7 +662,7 @@ function loadStateFromStorage() {
       state.membership = Object.assign({}, DEFAULT_STATE.membership, parsed.membership || {});
       state.cycleConfig = Object.assign({}, DEFAULT_STATE.cycleConfig, parsed.cycleConfig || {});
       state.previousCycleData = Object.assign({}, DEFAULT_STATE.previousCycleData, parsed.previousCycleData || {});
-      if (!state.categories || state.categories.length === 0) {
+      if (!Array.isArray(state.categories)) {
         state.categories = JSON.parse(JSON.stringify(DEFAULT_STATE.categories));
       }
       if (!Array.isArray(state.goals)) {
@@ -1753,8 +1753,34 @@ function renderBudgetsScreen(fin) {
 
   const planEmptyEl = document.getElementById("plan-empty-state");
   if (planEmptyEl) {
+    const hasFlexibleCats = (ArthivaState.categories || []).some(c => c.type === "flexible") || (ArthivaState.budgets && ArthivaState.budgets.length > 0);
     const noExpensesYet = !ArthivaState.expenses || ArthivaState.expenses.length === 0;
-    planEmptyEl.style.display = noExpensesYet ? "block" : "none";
+
+    if (!hasFlexibleCats) {
+      planEmptyEl.style.display = "block";
+      const title = planEmptyEl.querySelector(".section-empty-title");
+      const desc = planEmptyEl.querySelector(".section-empty-desc");
+      const btn = planEmptyEl.querySelector("button");
+      if (title) title.textContent = "Add your first category";
+      if (desc) desc.textContent = "Create a flexible spending category and monthly budget before logging expenses.";
+      if (btn) {
+        btn.textContent = "+ Add category";
+        btn.setAttribute("onclick", "openAddCategoryModal('flexible')");
+      }
+    } else if (noExpensesYet) {
+      planEmptyEl.style.display = "block";
+      const title = planEmptyEl.querySelector(".section-empty-title");
+      const desc = planEmptyEl.querySelector(".section-empty-desc");
+      const btn = planEmptyEl.querySelector("button");
+      if (title) title.textContent = "Log your first expense";
+      if (desc) desc.textContent = "Track groceries, dining out, transport, or split a purchase across two categories.";
+      if (btn) {
+        btn.textContent = "Quick log";
+        btn.setAttribute("onclick", "openQuickAddExpenseSheet()");
+      }
+    } else {
+      planEmptyEl.style.display = "none";
+    }
   }
 
   // Update dynamic macro allocation labels on Plan screen
@@ -3343,6 +3369,7 @@ function saveCustomCategory() {
   }
 
   closeModalDialog("add-category-modal");
+  saveStateToStorage();
   renderApp();
   renderOnboardingCommitmentChips();
   showToast(`Created new category "${name}"!`);
@@ -3966,6 +3993,14 @@ function setInlineError(errId, inputId, message) {
 
 function openQuickAddExpenseSheet() {
   closeFabMenu();
+
+  const flexibleCats = (ArthivaState.categories || []).filter(c => c.type === "flexible");
+  if (!flexibleCats || flexibleCats.length === 0) {
+    showToast("Please add a spending category with a monthly budget before quick logging.");
+    openAddCategoryModal("flexible");
+    return;
+  }
+
   const amtInput = document.getElementById("quick-expense-amount");
   const merchInput = document.getElementById("quick-expense-merchant");
   const noteInput = document.getElementById("quick-expense-note");
@@ -7054,6 +7089,7 @@ function buildEmptyNewUserState() {
   };
   emptyState.expenses = [];
   emptyState.budgets = [];
+  emptyState.categories = [];
   emptyState.notifications = [];
   emptyState.onboardingStep = 1;
   return emptyState;
@@ -7155,6 +7191,12 @@ function showAuthCredentialsView(mode) {
 
 function openAuthCredentialsView(mode) {
   authCurrentFlowMode = mode === "signin" ? "signin" : "signup";
+  if (authCurrentFlowMode === "signup") {
+    // If it's a new user flow, ensure we start with clean empty state (no pre-seeded categories or data)
+    ArthivaState = buildEmptyNewUserState();
+    onboardingDraft = createEmptyOnboardingDraft();
+    saveStateToStorage();
+  }
   showOnlyAuthSubView("auth-credentials-view");
 
   const badgeEl = document.getElementById("auth-mode-badge");
