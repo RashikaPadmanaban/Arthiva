@@ -8933,13 +8933,7 @@ function showToast(message) {
 }
 
 function triggerPushNotification() {
-  const banner = document.getElementById("push-banner");
-  if (!banner) return;
-
-  banner.classList.add("visible");
-  setTimeout(() => {
-    banner.classList.remove("visible");
-  }, 4500);
+  // Banner removed per user request
 }
 
 // --------------------------------------------------------------------------
