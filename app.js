@@ -1145,7 +1145,8 @@ function renderHeader(user) {
   if (hour >= 12 && hour < 17) timeGreeting = "Good afternoon";
   else if (hour >= 17) timeGreeting = "Good evening";
 
-  if (nameEl) nameEl.textContent = `${timeGreeting}, ${user.name}`;
+  const displayName = user && user.name ? user.name : "there";
+  if (nameEl) nameEl.textContent = `${timeGreeting}, ${displayName}`;
   if (avatarEl) renderAvatarIntoElement(avatarEl, user);
 
   const unreadCount = ArthivaState.notifications.filter(n => !n.read).length;
@@ -2764,18 +2765,21 @@ function renderProfileScreen() {
   const profileTier = document.getElementById("profile-membership-tier-badge");
 
   const user = ArthivaState.auth.user;
-  if (profileName) profileName.textContent = user.name || "New User";
+  if (profileName) profileName.textContent = user.name || "Add your name";
   if (profileMeta) {
-    const ageStr = user.age ? ` · ${user.age} yrs` : "";
-    profileMeta.textContent = `${user.role || "Member"} · ${user.city || "India"}${ageStr}`;
+    const metaParts = [];
+    if (user.role) metaParts.push(user.role);
+    if (user.city) metaParts.push(user.city);
+    if (user.age) metaParts.push(`${user.age} yrs`);
+    profileMeta.textContent = metaParts.length > 0 ? metaParts.join(" · ") : "Add role, city & age";
   }
-  if (profileEmail) profileEmail.textContent = user.email || "user@arthiva.app";
+  if (profileEmail) profileEmail.textContent = user.email ? `✉ ${user.email}` : "✉ Add email";
   if (profileMobile) {
-    const mob = String(user.mobile || "9845012345").replace(/\D/g, "").slice(-10);
-    profileMobile.textContent = mob.length === 10 ? `+91 ${mob.slice(0, 5)} ${mob.slice(5)}` : `+91 ${mob}`;
+    const mob = String(user.mobile || "").replace(/\D/g, "").slice(-10);
+    profileMobile.textContent = mob.length === 10 ? `📱 +91 ${mob.slice(0, 5)} ${mob.slice(5)}` : "📱 Add mobile number";
   }
   if (profileHousehold) {
-    profileHousehold.textContent = `🏠 ${user.householdName || `${user.name || 'Personal'}'s Household`}`;
+    profileHousehold.textContent = `🏠 ${user.householdName || (user.name ? `${user.name}'s Household` : 'Household')}`;
   }
 
   if (profileAvatar) renderAvatarIntoElement(profileAvatar, user);
@@ -4801,8 +4805,9 @@ let pendingAvatarImageObj = null;
 let pendingAvatarZoom = 1;
 
 function calculateAgeFromDob(dobISO) {
-  if (!dobISO) return 27;
+  if (!dobISO) return null;
   const dob = new Date(dobISO + "T12:00:00");
+  if (isNaN(dob.getTime())) return null;
   const ref = new Date("2026-10-20T12:00:00");
   let age = ref.getFullYear() - dob.getFullYear();
   const m = ref.getMonth() - dob.getMonth();
@@ -4825,14 +4830,17 @@ function openEditProfileModal() {
   const verifyBox = document.getElementById("edit-profile-verify-box");
   const verifyCode = document.getElementById("edit-profile-verify-code");
 
-  if (nameInput) nameInput.value = u.name || "Rashika";
-  if (emailInput) emailInput.value = u.email || "rashika@arthiva.app";
-  if (mobileInput) mobileInput.value = u.mobile || "9845012345";
-  if (householdInput) householdInput.value = u.householdName || `${u.name || "Rashika"}'s Household`;
-  if (dobInput) dobInput.value = u.dob || "1999-05-14";
-  if (ageDisplay) ageDisplay.value = `${calculateAgeFromDob(u.dob || "1999-05-14")} yrs`;
-  if (roleInput) roleInput.value = u.role || "Product Analyst";
-  if (cityInput) cityInput.value = u.city || "Bengaluru";
+  if (nameInput) nameInput.value = u.name || "";
+  if (emailInput) emailInput.value = u.email || "";
+  if (mobileInput) mobileInput.value = u.mobile || "";
+  if (householdInput) householdInput.value = u.householdName || (u.name ? `${u.name}'s Household` : "");
+  if (dobInput) dobInput.value = u.dob || "";
+  if (ageDisplay) {
+    const calculatedAge = u.dob ? calculateAgeFromDob(u.dob) : null;
+    ageDisplay.value = calculatedAge ? `${calculatedAge} yrs` : "";
+  }
+  if (roleInput) roleInput.value = u.role || "";
+  if (cityInput) cityInput.value = u.city || "";
   if (verifyBox) verifyBox.style.display = "none";
   if (verifyCode) verifyCode.value = "";
 
@@ -4847,7 +4855,8 @@ function onProfileDobChange() {
   const dobInput = document.getElementById("edit-profile-dob-input");
   const ageDisplay = document.getElementById("edit-profile-age-display");
   if (dobInput && ageDisplay) {
-    ageDisplay.value = `${calculateAgeFromDob(dobInput.value)} yrs`;
+    const age = calculateAgeFromDob(dobInput.value);
+    ageDisplay.value = age ? `${age} yrs` : "";
   }
 }
 
@@ -4858,8 +4867,14 @@ function checkProfileSensitiveChange() {
   const verifyBox = document.getElementById("edit-profile-verify-box");
   if (!emailInput || !mobileInput || !verifyBox) return;
 
-  const emailChanged = emailInput.value.trim().toLowerCase() !== (u.email || "").toLowerCase();
-  const mobileChanged = mobileInput.value.replace(/\D/g, "").slice(-10) !== String(u.mobile || "").replace(/\D/g, "").slice(-10);
+  const emailVal = emailInput.value.trim().toLowerCase();
+  const mobVal = mobileInput.value.replace(/\D/g, "").slice(-10);
+  const origEmail = (u.email || "").toLowerCase();
+  const origMob = String(u.mobile || "").replace(/\D/g, "").slice(-10);
+
+  // If user had no previous email/mobile, initial entry is not a sensitive change
+  const emailChanged = origEmail ? (emailVal !== origEmail) : false;
+  const mobileChanged = origMob ? (mobVal !== origMob) : false;
   verifyBox.style.display = (emailChanged || mobileChanged) ? "block" : "none";
 }
 
@@ -4914,19 +4929,20 @@ function saveProfileDetails() {
   const newEmail = emailInput ? emailInput.value.trim() : "";
   const newMobile = mobileInput ? mobileInput.value.replace(/\D/g, "").slice(-10) : "";
   const newHousehold = householdInput ? householdInput.value.trim() : "";
-  const newDob = dobInput ? dobInput.value : "1999-05-14";
-  const newRole = roleInput ? roleInput.value.trim() : "Product Analyst";
-  const newCity = cityInput ? cityInput.value.trim() : "Bengaluru";
+  const newDob = dobInput ? dobInput.value : "";
+  const newRole = roleInput ? roleInput.value.trim() : "";
+  const newCity = cityInput ? cityInput.value.trim() : "";
 
   u.name = newName;
   u.email = newEmail;
   u.mobile = newMobile;
-  u.householdName = newHousehold || `${newName}'s Household`;
+  u.householdName = newHousehold || (newName ? `${newName}'s Household` : "");
   u.dob = newDob;
-  u.age = calculateAgeFromDob(newDob);
-  u.role = newRole || "Product Analyst";
-  u.city = newCity || "Bengaluru";
+  u.age = newDob ? calculateAgeFromDob(newDob) : null;
+  u.role = newRole;
+  u.city = newCity;
 
+  saveStateToStorage();
   closeModalDialog("edit-profile-modal");
   renderApp();
   showToast("Profile updated");
