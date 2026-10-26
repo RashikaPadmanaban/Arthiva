@@ -909,8 +909,16 @@ function calculateFinancials() {
     })
     .reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
-  // Safe to Spend equation (Option A: Current Balance - Spent this cycle - Bills - SIPs - Goals)
-  const safeToSpend = balance - discretionaryExpenses - billsBeforePayday - savingsToSetAside;
+  // Unified single Safe to Spend formula everywhere:
+  // Current balance − unpaid bills before payday − unpaid SIPs before payday − this cycle's goal contributions
+  const unpaidSIPsBeforePayday = ArthivaState.commitments
+    .filter(c => c.status === "upcoming" && classifyBillTiming(c, cycleCtx) === "before_payday" && (c.category.toLowerCase().includes("sip") || c.name.toLowerCase().includes("sip")))
+    .reduce((s, c) => s + Number(c.amount), 0);
+  const unpaidNonSipBillsBeforePayday = Math.max(0, billsBeforePayday - unpaidSIPsBeforePayday);
+  const goalContributionsThisCycle = savingsToSetAside;
+
+  // Single formula across Home, breakdown sheet, Spending Plan and Insights:
+  const safeToSpend = balance - billsBeforePayday - goalContributionsThisCycle;
 
   const daysLeft = cycleCtx.daysLeft || 1;
   const rawDailyRate = safeToSpend > 0 ? Math.round(safeToSpend / daysLeft) : 0;
@@ -921,7 +929,7 @@ function calculateFinancials() {
 
   const isShortfall = !ArthivaState.appliedAdjustments.gracePeriodUsed && 
                       !ArthivaState.appliedAdjustments.savingsDeferred &&
-                      (safeToSpend < 0 || rawDailyRate < 500);
+                      (safeToSpend < 0 || (rawDailyRate < 500 && (ArthivaState.expenses.length > 0 || (ArthivaState.balanceHistory && ArthivaState.balanceHistory.length > 1))));
   const shortfallAmount = safeToSpend < 0 ? Math.abs(safeToSpend) : 0;
 
   return {
@@ -1156,32 +1164,22 @@ function renderHeader(user) {
  */
 function renderHomeScreen(fin) {
   const heroCard = document.getElementById("home-hero-card");
+  const heroZeroCard = document.getElementById("home-zero-balance-card");
   const heroEmptyState = document.getElementById("home-empty-state");
+  const guidedNextStepCard = document.getElementById("home-guided-next-step");
   const heroAmountEl = document.getElementById("hero-safe-amount");
   const heroPaceEl = document.getElementById("hero-pace-text");
-  const heroYetToPayEl = document.getElementById("hero-yet-to-pay-val");
-  const heroGoalAsideEl = document.getElementById("hero-goal-aside-val");
-  const heroPaidCycleEl = document.getElementById("hero-paid-cycle-val");
-  const yetToPayLabelEl = document.getElementById("home-yet-to-pay-label");
-  const cycleFillEl = document.getElementById("cycle-progress-fill");
-  const cycleDatesEl = document.getElementById("pay-cycle-dates-label");
-  const cycleDaysLeftEl = document.getElementById("pay-cycle-days-left-badge");
-  const cycleMetaText = document.getElementById("cycle-progress-meta-text");
-  const balanceValEl = document.getElementById("checkin-balance-val");
-  const balanceStampEl = document.getElementById("checkin-balance-stamp");
   const alertCard = document.getElementById("home-alert-card");
   const trackingBanner = document.getElementById("home-tracking-status-banner");
 
-  // Pay cycle ribbon
-  if (cycleDatesEl) {
-    cycleDatesEl.textContent = `Pay Cycle: ${fin.cycleCtx.startStr} – ${fin.cycleCtx.endStr}`;
-  }
-  if (cycleDaysLeftEl) {
-    cycleDaysLeftEl.textContent = `${fin.daysLeft} days left`;
-  }
-  if (cycleMetaText) {
-    cycleMetaText.innerHTML = `<span>Payday: ${fin.cycleCtx.startStr}</span><span>Day ${fin.cycleCtx.daysElapsed} of ${fin.cycleCtx.daysTotal} (${fin.cycleProgress}%)</span><span>Next: ${fin.cycleCtx.endStr}</span>`;
-  }
+  const receiptBalEl = document.getElementById("hero-receipt-balance");
+  const receiptKeptEl = document.getElementById("hero-receipt-kept");
+  const receiptSafeEl = document.getElementById("hero-receipt-safe");
+  const barKeptEl = document.getElementById("hero-bar-kept");
+  const barSafeEl = document.getElementById("hero-bar-safe");
+  const labelKeptEl = document.getElementById("hero-prop-label-kept");
+  const labelSafeEl = document.getElementById("hero-prop-label-safe");
+  const freshnessEl = document.getElementById("hero-freshness-text");
 
   // Automatic Tracking Status Banner on Home
   if (trackingBanner) {
@@ -1203,71 +1201,113 @@ function renderHomeScreen(fin) {
     }
   }
 
-  const hasIncomeSetup = !ArthivaState.isEmptyState && (Number(ArthivaState.cycleConfig.takeHome) > 0 || Number(ArthivaState.balance.amount) > 0);
+  const hasIncome = !ArthivaState.isEmptyState && Number(ArthivaState.cycleConfig?.takeHome) > 0;
+  const hasBalance = !ArthivaState.isEmptyState && Number(ArthivaState.balance?.amount) > 0;
+  const isBrandNewUser = ArthivaState.isEmptyState || (!ArthivaState.commitments || ArthivaState.commitments.length === 0);
 
-  if (!hasIncomeSetup) {
+  // Income Empty State Box: Only show if income is NOT set up yet
+  if (heroEmptyState) {
+    heroEmptyState.style.display = hasIncome ? "none" : "flex";
+  }
+
+  // Guided Next Step Card handling: Show when income is set up and user is new
+  if (guidedNextStepCard) {
+    guidedNextStepCard.style.display = (hasIncome && isBrandNewUser) ? "block" : "none";
+    if (hasIncome && isBrandNewUser) {
+      updateGuidedNextStepContent();
+    }
+  }
+
+  if (!hasIncome) {
     if (heroCard) heroCard.style.display = "none";
-    if (heroEmptyState) heroEmptyState.style.display = "block";
+    if (heroZeroCard) heroZeroCard.style.display = "none";
+    if (alertCard) alertCard.style.display = "none";
+  } else if (!hasBalance) {
+    if (heroCard) heroCard.style.display = "none";
+    if (heroZeroCard) heroZeroCard.style.display = "block";
     if (alertCard) alertCard.style.display = "none";
   } else {
     if (heroCard) heroCard.style.display = "block";
-    if (heroEmptyState) heroEmptyState.style.display = "none";
-    if (alertCard) {
-      // Hide Pacing Attention if there is no data or no shortfall
-      const hasUserData = !ArthivaState.isEmptyState &&
-                          ((ArthivaState.commitments && ArthivaState.commitments.length > 0) ||
-                           (ArthivaState.expenses && ArthivaState.expenses.length > 0));
-      alertCard.style.display = (hasUserData && fin.isShortfall) ? "flex" : "none";
-    }
+    if (heroZeroCard) heroZeroCard.style.display = "none";
 
-    if (heroAmountEl) heroAmountEl.textContent = formatINR(fin.safeToSpend);
-    if (heroPaceEl) {
+    // Round figures to nearest ₹100 for plain language display
+    const roundedDaily = Math.round(fin.dailyRate / 100) * 100 || fin.dailyRate;
+    const roundedSafe = Math.round(fin.safeToSpend / 100) * 100 || fin.safeToSpend;
+    const roundedBal = Math.round(fin.currentBalance / 100) * 100 || fin.currentBalance;
+
+    // Kept aside = unpaid bills before payday + goal contributions
+    const upcomingBills = (ArthivaState.commitments || [])
+      .filter(c => c.status === "upcoming" && classifyBillTiming(c, fin.cycleCtx) === "before_payday");
+    const billsTotal = upcomingBills.reduce((s, b) => s + b.amount, 0);
+    const goalAside = fin.savingsToSetAside || 0;
+    const totalKeptAside = billsTotal + goalAside;
+    const roundedKept = Math.round(totalKeptAside / 100) * 100 || totalKeptAside;
+
+    // Hero: "₹X safe to spend today", sub: "₹X till payday · [Date] · X days" (countdown shown once only)
+    if (heroAmountEl) {
       if (fin.safeToSpend < 0) {
-        heroPaceEl.innerHTML = `<span class="pace-highlight" style="color:var(--state-risk);">Shortfall: ${formatINR(Math.abs(fin.safeToSpend))}</span> · ${fin.daysLeft} days to payday (${fin.cycleCtx.endStr})`;
+        heroAmountEl.textContent = `${formatINR(Math.abs(fin.safeToSpend))} shortfall before payday`;
+        heroAmountEl.style.color = "var(--state-risk)";
       } else {
-        const paceVal = formatINR(fin.dailyRate);
-        heroPaceEl.innerHTML = `<span class="pace-highlight">${paceVal}/day</span> · ${fin.daysLeft} days to payday (${fin.cycleCtx.endStr})`;
+        heroAmountEl.textContent = `${formatINR(roundedDaily)} safe to spend today`;
+        heroAmountEl.style.color = "var(--text-primary)";
       }
     }
-    const heroTraceBalEl = document.getElementById("hero-trace-bal");
-    const heroTraceSalaryEl = document.getElementById("hero-trace-salary");
-    const heroTraceSipsEl = document.getElementById("hero-trace-sips");
-    const heroTraceSafeEl = document.getElementById("hero-trace-safe");
 
-    const sipCommitments = ArthivaState.commitments
-      .filter(c => c.status !== "skipped" && classifyBillTiming(c, fin.cycleCtx) !== "after_payday" && (c.category.toLowerCase().includes("sip") || c.name.toLowerCase().includes("sip")))
-      .reduce((s, c) => s + Number(c.amount), 0);
-    const nonSipBills = Math.max(0, (fin.paidBillsThisCycle + fin.billsBeforePayday) - sipCommitments);
+    if (heroPaceEl) {
+      if (fin.safeToSpend < 0) {
+        heroPaceEl.textContent = `₹0 till payday · ${fin.cycleCtx.endStr} · ${fin.daysLeft} days`;
+      } else {
+        heroPaceEl.textContent = `${formatINR(roundedSafe)} till payday · ${fin.cycleCtx.endStr} · ${fin.daysLeft} days`;
+      }
+    }
 
-    if (heroTraceBalEl) heroTraceBalEl.textContent = formatINR(fin.currentBalance);
-    if (heroTraceSalaryEl) heroTraceSalaryEl.textContent = formatINR(ArthivaState.cycleConfig.takeHome || 0);
-    if (heroYetToPayEl) heroYetToPayEl.textContent = formatINR(nonSipBills);
-    if (heroTraceSipsEl) heroTraceSipsEl.textContent = formatINR(sipCommitments);
-    if (heroGoalAsideEl) heroGoalAsideEl.textContent = formatINR(fin.savingsToSetAside);
-    if (heroTraceSafeEl) heroTraceSafeEl.textContent = formatINR(fin.safeToSpend);
-    if (heroPaidCycleEl) heroPaidCycleEl.textContent = formatINR(fin.paidBillsThisCycle);
-    if (cycleFillEl) {
-      cycleFillEl.style.width = `${fin.cycleProgress}%`;
+    // Receipt lines
+    if (receiptBalEl) receiptBalEl.textContent = formatINR(roundedBal);
+    if (receiptKeptEl) receiptKeptEl.textContent = `− ${formatINR(roundedKept)}`;
+    if (receiptSafeEl) {
+      receiptSafeEl.textContent = fin.safeToSpend < 0 ? `− ${formatINR(Math.abs(roundedSafe))}` : formatINR(roundedSafe);
+      receiptSafeEl.style.color = fin.safeToSpend < 0 ? "var(--state-risk)" : "var(--primary)";
+    }
+
+    // Proportional horizontal bar
+    const totalBar = roundedBal > 0 ? roundedBal : (totalKeptAside + Math.max(0, fin.safeToSpend)) || 1;
+    const keptPct = Math.min(100, Math.max(0, Math.round((totalKeptAside / totalBar) * 100)));
+    const safePct = Math.min(100, Math.max(0, 100 - keptPct));
+
+    if (barKeptEl) barKeptEl.style.width = `${keptPct}%`;
+    if (barSafeEl) barSafeEl.style.width = `${safePct}%`;
+    if (labelKeptEl) labelKeptEl.textContent = `Kept aside: ${formatINR(roundedKept)} (${keptPct}%)`;
+    if (labelSafeEl) labelSafeEl.textContent = `Safe to spend: ${formatINR(roundedSafe)} (${safePct}%)`;
+
+    // Freshness line: "Based on balance you updated X days ago"
+    if (freshnessEl) {
+      freshnessEl.textContent = `Based on balance you updated 2 days ago`;
+    }
+
+    // Single alert slot: Used strictly when there is a shortfall
+    if (alertCard) {
+      const hasShortfall = fin.safeToSpend < 0 || (fin.dailyRate < 500 && fin.safeToSpend > 0 && ArthivaState.expenses.length > 0);
+      alertCard.style.display = hasShortfall ? "flex" : "none";
+      const alertMsgEl = document.getElementById("home-alert-msg");
+      if (alertMsgEl) {
+        alertMsgEl.textContent = `At this pace you'll be ₹2,400 short for your insurance renewal on 28 Oct.`;
+      }
     }
   }
 
-  if (yetToPayLabelEl) {
-    yetToPayLabelEl.textContent = `Pay (Before ${fin.cycleCtx.endStr})`;
-  }
-
-  // Balance
-  if (balanceValEl) balanceValEl.textContent = formatINR(fin.currentBalance);
-  if (balanceStampEl) balanceStampEl.textContent = ArthivaState.balance.label;
-
-  // Next Upcoming Bills Preview (Pay Before <date>)
+  // Next 3 Bills Due Before Payday Preview
   renderHomeBillsPreview(fin.cycleCtx);
 
-  // Savings Goals Widget & Additional Goals
+  // Compact Goals Glance Widget
   renderHomeGoalWidget();
 }
 
 /**
  * Upcoming bills on Home: Shows only the "Pay (Before <date>)" group (Rule 2.3)
+ */
+/**
+ * Upcoming bills on Home: Shows next 3 bills due before payday + "See all" link
  */
 function renderHomeBillsPreview(cycleCtx) {
   const container = document.getElementById("home-bills-list");
@@ -1275,7 +1315,7 @@ function renderHomeBillsPreview(cycleCtx) {
 
   if (ArthivaState.isEmptyState || !ArthivaState.commitments || ArthivaState.commitments.length === 0) {
     container.innerHTML = `
-      <div class="section-empty-state">
+      <div class="section-empty-state" style="padding:16px 12px;">
         <div class="se-icon">📅</div>
         <h4>No bills yet</h4>
         <p>Add your rent, EMIs, and utility bills so Arthiva can protect them before payday.</p>
@@ -1297,7 +1337,10 @@ function renderHomeBillsPreview(cycleCtx) {
     return;
   }
 
-  container.innerHTML = upcoming.map(bill => {
+  // Exactly next 3 bills due before payday
+  const next3 = upcoming.slice(0, 3);
+
+  container.innerHTML = next3.map(bill => {
     const overdue = isBillOverdue(bill, cycleCtx);
     return `
       <div class="bill-item" onclick="openCommitmentActionSheet('${bill.id}')" role="button" tabindex="0">
@@ -1312,8 +1355,7 @@ function renderHomeBillsPreview(cycleCtx) {
               <span class="chip-tag auto-debit">${escapeHTML(bill.method)}</span>
               ${overdue
                 ? '<span class="chip-tag overdue">Overdue</span>'
-                : `<span class="chip-tag" style="background:rgba(217,119,6,0.12);color:#B45309;font-weight:700;">Before ${cycleCtx.endStr}</span>`}
-              ${bill.isAtRisk ? '<span class="chip-tag overdue">Shortfall risk</span>' : ''}
+                : `<span class="chip-tag" style="background:rgba(217,119,6,0.12);color:#B45309;font-weight:700;">Due ${escapeHTML(bill.dueDateFormatted || bill.dueDate)}</span>`}
             </div>
           </div>
         </div>
@@ -1327,58 +1369,8 @@ function renderHomeBillsPreview(cycleCtx) {
 }
 
 /**
- * Savings Goal Widget on Home (Requirements 6 & 7:
- * 6.1 Large progress ring + prominent saved amount ("₹15,000 saved") & smaller target ("of ₹40,000")
- * 6.2 "Secured" badge with shield/lock icon on money already saved
- * 6.3 Milestone badges at 25%, 50%, 75% and 100% ("Goal achieved" with check icon)
- * 6.4 Short encouraging line per goal ("₹15,000 more to reach 75%" or "On track for Mar 2027")
- * 6.5 One-time subtle celebration when a milestone is crossed (respects prefers-reduced-motion)
- * 7.1-7.3 Edit (pencil) icon next to "Details" link on the same row, aria-label="Edit goal", no black box)
+ * Savings Goals on Home: Rich Card Component (Redesign)
  */
-function getGoalMilestoneInfo(pct, currentSaved, targetAmount, proj) {
-  let milestoneLevel = 0;
-  let milestoneBadgeHTML = "";
-
-  if (pct >= 100) {
-    milestoneLevel = 100;
-    milestoneBadgeHTML = `
-      <span class="goal-milestone-badge achieved">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        Goal achieved
-      </span>
-    `;
-  } else if (pct >= 75) {
-    milestoneLevel = 75;
-    milestoneBadgeHTML = `<span class="goal-milestone-badge">★ 75% Milestone · Final stretch!</span>`;
-  } else if (pct >= 50) {
-    milestoneLevel = 50;
-    milestoneBadgeHTML = `<span class="goal-milestone-badge">★ 50% · Halfway there!</span>`;
-  } else if (pct >= 25) {
-    milestoneLevel = 25;
-    milestoneBadgeHTML = `<span class="goal-milestone-badge">✓ 25% Milestone reached</span>`;
-  }
-
-  // Next milestone encouraging line (6.4)
-  let nextMilestonePct = 25;
-  if (pct >= 75) nextMilestonePct = 100;
-  else if (pct >= 50) nextMilestonePct = 75;
-  else if (pct >= 25) nextMilestonePct = 50;
-
-  let encouragingText = "";
-  if (pct >= 100) {
-    encouragingText = `100% funded and safely ring-fenced!`;
-  } else {
-    const neededForNext = Math.max(0, Math.ceil((targetAmount * (nextMilestonePct / 100)) - currentSaved));
-    if (neededForNext > 0 && neededForNext <= targetAmount * 0.25) {
-      encouragingText = `${formatINR(neededForNext)} more to reach ${nextMilestonePct}% · On track for ${proj.plannedMonthStr}`;
-    } else {
-      encouragingText = `On track for ${proj.plannedMonthStr} · ${formatINR(neededForNext)} to ${nextMilestonePct}% milestone`;
-    }
-  }
-
-  return { milestoneLevel, milestoneBadgeHTML, encouragingText };
-}
-
 function renderHomeGoalWidget() {
   const container = document.getElementById("home-goals-container");
   if (!container) return;
@@ -1387,111 +1379,138 @@ function renderHomeGoalWidget() {
 
   if (ArthivaState.isEmptyState || goals.length === 0) {
     container.innerHTML = `
-      <div class="section-empty-state">
-        <div class="se-icon">🛡️</div>
-        <h4>Start your first goal</h4>
-        <p>We suggest starting with an <strong>Emergency Medical Buffer</strong> to ring-fence unexpected healthcare expenses.</p>
-        <button type="button" class="btn-primary" style="width: auto; height: 36px; padding: 0 16px; font-size: 12.5px;" onclick="openCreateGoalModal()">Create goal</button>
+      <div class="section-empty-state" style="padding:20px 16px; background:#fff; border-radius:24px; box-shadow:0 4px 20px rgba(109,63,224,0.06); text-align:center;">
+        <div class="se-icon" style="font-size:32px; margin-bottom:8px;">🎯</div>
+        <h4 style="font-size:17px; font-weight:700; color:#111827; margin-bottom:4px;">Start your first savings goal</h4>
+        <p style="font-size:13px; color:#6B7280; line-height:1.45; margin-bottom:16px;">We suggest starting with an <strong>Emergency Medical Buffer</strong> (₹60,000).</p>
+        <button type="button" class="btn-primary" style="width: auto; height: 38px; padding: 0 18px; font-size: 13px;" onclick="openCreateGoalModal()">Create goal</button>
       </div>
     `;
     return;
   }
 
-  const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let stateUpdatedForMilestone = false;
-
   container.innerHTML = goals.map(g => {
-    const gPct = Math.min(100, Math.round((g.currentSaved / (g.targetAmount || 1)) * 100));
-    const gProj = calculateGoalProjection(g.targetAmount, g.currentSaved, g.monthlyAllocation, g.targetDate);
-    const mInfo = getGoalMilestoneInfo(gPct, g.currentSaved, g.targetAmount, gProj);
+    const saved = Number(g.savedAmount !== undefined ? g.savedAmount : g.currentSaved) || 0;
+    const target = Number(g.targetAmount) || 1;
+    const pct = Math.min(100, Math.round((saved / target) * 100));
 
-    // 6.5 One-time celebration check when a milestone is newly crossed
-    const prevCelebrated = Number(g.celebratedMilestone || 0);
-    let shouldCelebrateOnce = false;
-    if (mInfo.milestoneLevel > prevCelebrated) {
-      g.celebratedMilestone = mInfo.milestoneLevel;
-      shouldCelebrateOnce = true;
-      stateUpdatedForMilestone = true;
+    // Circular ring math (radius = 28, circumference ~ 175.93)
+    const radius = 28;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (pct / 100) * circumference;
+
+    // Secured badge: if explicitly marked isSecured or has a linkedAccount
+    const isSecured = g.isSecured !== undefined ? Boolean(g.isSecured) : Boolean(g.linkedAccount && g.linkedAccount.trim());
+
+    // Highest milestone crossed (25 / 50 / 75%); hide if < 25%
+    let milestoneBadgeHTML = "";
+    if (pct >= 75) {
+      milestoneBadgeHTML = `<div class="rsg-milestone-pill">✓ 75% Milestone reached</div>`;
+    } else if (pct >= 50) {
+      milestoneBadgeHTML = `<div class="rsg-milestone-pill">✓ 50% Milestone reached</div>`;
+    } else if (pct >= 25) {
+      milestoneBadgeHTML = `<div class="rsg-milestone-pill">✓ 25% Milestone reached</div>`;
     }
 
-    const radius = 21;
-    const circumference = +(2 * Math.PI * radius).toFixed(2);
-    const strokeOffset = +(circumference - (gPct / 100) * circumference).toFixed(2);
-    const ringColor = gPct >= 100 ? "var(--state-safe)" : "var(--primary)";
+    // Linked account line (Hide if missing)
+    const accountLineHTML = (g.linkedAccount && g.linkedAccount.trim())
+      ? `<div class="rsg-account-line">${escapeHTML(g.linkedAccount)}</div>`
+      : "";
 
-    const celebrationGlowClass = (shouldCelebrateOnce && !prefersReducedMotion) ? "goal-celebrate-glow" : "";
-    const completedClass = gPct >= 100 ? "goal-completed" : "";
+    // Projection & on-track status
+    const proj = calculateGoalProjection(target, saved, g.monthlyAllocation || 0, g.targetDate);
+    const isOnTrack = proj.statusLabel === "On Track";
+    const statusClass = isOnTrack ? "on-track" : "behind";
+    const statusLabel = isOnTrack ? "ON TRACK" : "BEHIND";
+
+    // Amount to next milestone & target date string
+    let nextMilestone = 25;
+    if (pct >= 75) nextMilestone = 100;
+    else if (pct >= 50) nextMilestone = 75;
+    else if (pct >= 25) nextMilestone = 50;
+
+    const nextMilestoneTargetAmt = Math.round(target * (nextMilestone / 100));
+    const amountToNextMilestone = Math.max(0, nextMilestoneTargetAmt - saved);
+
+    // Footer insight text
+    let footerText = "";
+    if (pct >= 100) {
+      footerText = `Goal reached 🎉`;
+    } else if (isOnTrack) {
+      footerText = `₹${amountToNextMilestone.toLocaleString('en-IN')} more to reach ${nextMilestone}% · On track for ${proj.plannedMonthStr || "March 2027"}`;
+    } else {
+      footerText = `₹${amountToNextMilestone.toLocaleString('en-IN')} more to reach ${nextMilestone}% · Behind schedule for ${proj.plannedMonthStr || "March 2027"}`;
+    }
 
     return `
-      <div class="card goal-widget ${completedClass} ${celebrationGlowClass}" style="position: relative;">
-        ${shouldCelebrateOnce && !prefersReducedMotion ? `
-          <div class="goal-confetti-dots" aria-hidden="true">
-            <span style="background: var(--state-safe);"></span>
-            <span style="background: var(--accent-gold);"></span>
-            <span style="background: var(--primary);"></span>
-          </div>
-        ` : ''}
-
-        <div class="goal-top" style="align-items: flex-start;">
-          <div class="goal-info" style="flex: 1;">
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-              <h4>${escapeHTML(g.title)}</h4>
-              ${g.currentSaved > 0 ? `
-                <span class="goal-secured-badge" title="Funds ring-fenced and protected from daily spend">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      <div class="rich-savings-goal-card" onclick="openGoalDetailModal('${g.id}')" style="cursor: pointer;">
+        <div class="rsg-header-row">
+          <div class="rsg-title-group">
+            <div class="rsg-title-line">
+              <h3 class="rsg-goal-title">${escapeHTML(g.title || "Savings Goal")}</h3>
+              ${isSecured ? `
+                <span class="rsg-secured-pill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
                   Secured
                 </span>
-              ` : ''}
+              ` : ""}
             </div>
-            <div style="margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-              ${mInfo.milestoneBadgeHTML}
-              ${g.linkedAccount ? `<span style="font-size: 10.5px; color: var(--text-muted);">${escapeHTML(g.linkedAccount)}</span>` : ''}
-            </div>
+            ${milestoneBadgeHTML}
+            ${accountLineHTML}
           </div>
 
-          <!-- 6.1 Large SVG Progress Ring -->
-          <div class="goal-progress-ring-wrap" role="img" aria-label="${gPct}% of ${escapeHTML(g.title)} goal saved">
-            <svg viewBox="0 0 52 52">
-              <circle cx="26" cy="26" r="${radius}" fill="none" stroke="var(--bg-subtle)" stroke-width="4.5"></circle>
-              <circle cx="26" cy="26" r="${radius}" fill="none" stroke="${ringColor}" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${strokeOffset}"></circle>
+          <!-- Circular Progress Ring (~70px) -->
+          <div class="rsg-progress-ring-wrap" title="${pct}% funded">
+            <svg viewBox="0 0 70 70">
+              <circle class="rsg-ring-circle-bg" cx="35" cy="35" r="${radius}"></circle>
+              <circle class="rsg-ring-circle-fill" cx="35" cy="35" r="${radius}"
+                stroke-dasharray="${circumference.toFixed(2)}"
+                stroke-dashoffset="${strokeDashoffset.toFixed(2)}">
+              </circle>
             </svg>
-            <span class="goal-progress-ring-label tabular-nums">${gPct}%</span>
+            <span class="rsg-ring-percent-text tabular-nums">${pct}%</span>
           </div>
         </div>
 
-        <!-- 6.1 Prominent saved amount ("₹15,000 saved") & smaller target ("of ₹40,000") -->
-        <div class="goal-hero-saved-row">
-          <div>
-            <span class="goal-saved-prominent tabular-nums">${formatINR(g.currentSaved)} saved</span>
-            <span class="goal-target-smaller tabular-nums">of ${formatINR(g.targetAmount)}</span>
+        <!-- Amount Row -->
+        <div class="rsg-amount-row">
+          <div class="rsg-amount-left">
+            <span class="rsg-amount-saved tabular-nums">₹${saved.toLocaleString('en-IN')}</span>
+            <span class="rsg-amount-target tabular-nums">saved of ₹${target.toLocaleString('en-IN')}</span>
           </div>
-          <span class="status-pill ${gPct >= 100 ? 'within' : gProj.statusClass}">${gPct >= 100 ? '✓ Completed' : gProj.statusLabel}</span>
+          <span class="rsg-status-pill ${statusClass}">${statusLabel}</span>
         </div>
 
-        <div class="goal-progress-bar">
-          <div class="goal-progress-fill" style="width:${gPct}%; ${gPct >= 100 ? 'background: var(--state-safe);' : ''}"></div>
+        <!-- Thick Rounded Progress Bar (Amber gradient) -->
+        <div class="rsg-bar-track">
+          <div class="rsg-bar-fill" style="width: ${pct}%;"></div>
         </div>
 
-        <!-- 6.4 Encouraging line & 7.1-7.3 Edit icon beside Details on the same row -->
-        <div class="goal-encouraging-line">
-          <span>${escapeHTML(mInfo.encouragingText)}</span>
-          <div class="goal-actions-inline">
-            <button type="button" class="section-link" onclick="openGoalDetailModal('${g.id}')">Details</button>
-            <button type="button" class="goal-edit-icon-btn" aria-label="Edit goal" title="Edit goal" onclick="openEditGoalModal('${g.id}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-              </svg>
-            </button>
-          </div>
+        <!-- Footer Insight Text -->
+        <div class="rsg-footer-insight">
+          ${escapeHTML(footerText)}
+        </div>
+
+        <!-- Actions Row: Details link & Pencil edit icon -->
+        <div class="rsg-actions-row" onclick="event.stopPropagation();">
+          <button type="button" class="rsg-details-link" onclick="openGoalDetailModal('${g.id}')">
+            Details
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+          <button type="button" class="rsg-edit-icon-btn" title="Edit goal" aria-label="Edit goal ${escapeHTML(g.title || '')}" onclick="openEditGoalModal('${g.id}')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+          </button>
         </div>
       </div>
     `;
   }).join("");
-
-  if (stateUpdatedForMilestone) {
-    saveStateToStorage();
-  }
 }
 
 function toggleBreakdownSpentDetails() {
@@ -1507,63 +1526,69 @@ function toggleBreakdownSpentDetails() {
  * Safe to Spend Breakdown Sheet (Item 7 OVERRIDE: clean line items, no hyphens)
  */
 function renderBreakdownSheet(fin) {
-  const rowSalary = document.getElementById("eq-val-salary");
   const rowBal = document.getElementById("eq-val-balance");
-  const rowSpent = document.getElementById("eq-val-spent");
-  const rowSpentSub = document.getElementById("eq-val-spent-sub");
-  const spentListEl = document.getElementById("breakdown-spent-details-list");
-  const rowBills = document.getElementById("eq-val-bills");
-  const rowSips = document.getElementById("eq-val-sips");
-  const rowGoal = document.getElementById("eq-val-savings");
+  const keptTotalEl = document.getElementById("eq-val-kept-total");
+  const keptItemsContainer = document.getElementById("breakdown-kept-aside-items");
   const rowTotal = document.getElementById("eq-val-total");
   const rowTotalSub = document.getElementById("eq-val-total-sub");
 
-  const salary = ArthivaState.cycleConfig.takeHome || 0;
-  const sipTotal = ArthivaState.commitments
-    .filter(c => c.status === "upcoming" && classifyBillTiming(c, fin.cycleCtx) === "before_payday" && (c.category.toLowerCase().includes("sip") || c.name.toLowerCase().includes("sip")))
-    .reduce((s, c) => s + Number(c.amount), 0);
-  const billsExclSip = Math.max(0, fin.billsBeforePayday - sipTotal);
-
-  // Filter expenses strictly belonging to this cycle
-  const cycleExpenses = (ArthivaState.expenses || []).filter(e => {
-    if (!e.date) return true;
-    const expD = new Date(e.date + "T00:00:00");
-    return expD >= fin.cycleCtx.cycleStart && expD <= fin.cycleCtx.cycleEnd;
-  });
-  const totalSpentCycle = cycleExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-
-  if (rowSalary) rowSalary.textContent = formatINR(salary);
   if (rowBal) rowBal.textContent = formatINR(fin.currentBalance);
 
-  if (rowSpent) {
-    rowSpent.textContent = totalSpentCycle > 0 ? `−${formatINR(totalSpentCycle)}` : "₹0";
-  }
-  if (rowSpentSub) {
-    rowSpentSub.textContent = totalSpentCycle > 0
-      ? `${cycleExpenses.length} expense${cycleExpenses.length === 1 ? '' : 's'} logged (tap to view)`
-      : "No expenses logged yet";
-  }
+  // Unpaid bills before payday
+  const upcomingBills = (ArthivaState.commitments || [])
+    .filter(c => c.status === "upcoming" && classifyBillTiming(c, fin.cycleCtx) === "before_payday");
+  const billsTotal = upcomingBills.reduce((s, b) => s + b.amount, 0);
 
-  // Populate individual entries (newest first)
-  if (spentListEl) {
-    if (cycleExpenses.length === 0) {
-      spentListEl.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:4px;">No expenses logged this cycle.</div>`;
-    } else {
-      spentListEl.innerHTML = cycleExpenses.map(e => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed var(--border-subtle);">
+  // Unpaid SIPs before payday
+  const sipTotal = upcomingBills
+    .filter(c => c.category.toLowerCase().includes("sip") || c.name.toLowerCase().includes("sip"))
+    .reduce((s, c) => s + Number(c.amount), 0);
+
+  // Goal contributions
+  const goalAside = fin.savingsToSetAside || 0;
+  const totalKeptAside = billsTotal + goalAside;
+
+  if (keptTotalEl) keptTotalEl.textContent = `− ${formatINR(totalKeptAside)}`;
+
+  if (keptItemsContainer) {
+    let itemsHTML = "";
+    
+    // Each unpaid bill with due date
+    upcomingBills.forEach(b => {
+      const isSip = b.category.toLowerCase().includes("sip") || b.name.toLowerCase().includes("sip");
+      itemsHTML += `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12.5px;">
           <div>
-            <strong>${escapeHTML(e.merchant || e.category.split(" ")[0])}</strong>
-            <div style="font-size:10px;color:var(--text-muted);">${escapeHTML(e.category.split(" and ")[0])} · ${formatDateDisplay(e.date)}</div>
+            <span style="font-weight:600;color:var(--text-primary);">${escapeHTML(b.name)}</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">· Due ${escapeHTML(b.dueDateFormatted || b.dueDate)}</span>
+            ${isSip ? '<span class="chip-tag auto-debit" style="font-size:9.5px;padding:1px 5px;margin-left:4px;">SIP</span>' : ''}
           </div>
-          <span style="font-weight:700;color:var(--state-risk);" class="tabular-nums">−${formatINR(e.amount)}</span>
+          <span style="font-weight:700;color:var(--text-muted);" class="tabular-nums">− ${formatINR(b.amount)}</span>
         </div>
-      `).join("");
+      `;
+    });
+
+    // Goal contribution line if any
+    if (goalAside > 0) {
+      const goalTitle = (ArthivaState.goals && ArthivaState.goals[0] ? ArthivaState.goals[0].title : (ArthivaState.goal ? ArthivaState.goal.title : "Savings Goal"));
+      itemsHTML += `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12.5px;border-top:1px dashed var(--border-subtle);margin-top:2px;">
+          <div>
+            <span style="font-weight:600;color:var(--text-primary);">${escapeHTML(goalTitle)}</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">· Cycle contribution</span>
+          </div>
+          <span style="font-weight:700;color:var(--text-muted);" class="tabular-nums">− ${formatINR(goalAside)}</span>
+        </div>
+      `;
     }
+
+    if (!itemsHTML) {
+      itemsHTML = `<div style="font-size:11.5px;color:var(--text-muted);padding:4px 0;">No bills or goal contributions kept aside.</div>`;
+    }
+
+    keptItemsContainer.innerHTML = itemsHTML;
   }
 
-  if (rowBills) rowBills.textContent = billsExclSip > 0 ? `−${formatINR(billsExclSip)}` : "₹0";
-  if (rowSips) rowSips.textContent = sipTotal > 0 ? `−${formatINR(sipTotal)}` : "₹0";
-  if (rowGoal) rowGoal.textContent = fin.savingsToSetAside > 0 ? `−${formatINR(fin.savingsToSetAside)}` : "₹0";
   if (rowTotal) rowTotal.textContent = formatINR(fin.safeToSpend);
 
   if (rowTotalSub) {
@@ -1578,36 +1603,18 @@ function renderBreakdownSheet(fin) {
   const narrativeBox = document.getElementById("safe-to-spend-narrative-box");
   if (narrativeBox) {
     const curBal = Number(fin.currentBalance) || 0;
-    const reservedBills = billsExclSip + sipTotal;
-    const reservedGoals = Number(fin.savingsToSetAside) || 0;
-    const totalCommitted = reservedBills + reservedGoals;
-    const remainingBeforeSpend = curBal - totalCommitted;
-
     let narrativeHTML = "";
     if (fin.safeToSpend < 0) {
       narrativeHTML = `
-        <strong>Breakdown:</strong> Out of <strong>${formatINR(curBal)}</strong> opening balance, 
-        ${totalSpentCycle > 0 ? `<strong>${formatINR(totalSpentCycle)}</strong> is spent this cycle, ` : ''}
-        <strong>${formatINR(reservedBills)}</strong> is reserved for upcoming bills, and 
-        <strong>${formatINR(reservedGoals)}</strong> is set aside for goals. 
-        That's <strong>${formatINR(totalCommitted + totalSpentCycle)}</strong> committed/spent against <strong>${formatINR(curBal)}</strong>, 
-        leaving you <strong style="color:var(--state-risk);">${formatINR(Math.abs(fin.safeToSpend))} short</strong> this cycle.
-      `;
-    } else if (fin.safeToSpend === 0) {
-      narrativeHTML = `
-        <strong>Breakdown:</strong> Out of <strong>${formatINR(curBal)}</strong>, 
-        ${totalSpentCycle > 0 ? `<strong>${formatINR(totalSpentCycle)}</strong> was spent, ` : ''}
-        <strong>${formatINR(reservedBills)}</strong> is reserved for bills, and 
-        <strong>${formatINR(reservedGoals)}</strong> for goals. 
-        Your commitments exactly match your available balance, leaving <strong>₹0</strong> for extra spending until next payday.
+        <strong>Breakdown:</strong> Out of <strong>${formatINR(curBal)}</strong> in your account, 
+        <strong>${formatINR(totalKeptAside)}</strong> is kept aside for upcoming bills and savings contributions,
+        leaving you <strong style="color:var(--state-risk);">${formatINR(Math.abs(fin.safeToSpend))} short</strong> before payday.
       `;
     } else {
       narrativeHTML = `
-        <strong>Breakdown:</strong> Out of <strong>${formatINR(curBal)}</strong>, 
-        ${totalSpentCycle > 0 ? `<strong>${formatINR(totalSpentCycle)}</strong> is spent, ` : ''}
-        <strong>${formatINR(reservedBills)}</strong> is protected for upcoming bills, and 
-        <strong>${formatINR(reservedGoals)}</strong> is ring-fenced for goals. 
-        That leaves you <strong style="color:var(--state-safe);">${formatINR(fin.safeToSpend)} (${formatINR(fin.dailyRate)}/day)</strong> free to spend before payday.
+        <strong>Breakdown:</strong> Out of <strong>${formatINR(curBal)}</strong> in your account, 
+        <strong>${formatINR(totalKeptAside)}</strong> is kept aside for bills and savings before payday. 
+        That leaves exactly <strong style="color:var(--state-safe);">${formatINR(fin.safeToSpend)} (${formatINR(fin.dailyRate)}/day)</strong> safe to spend.
       `;
     }
     narrativeBox.innerHTML = narrativeHTML;
@@ -1754,17 +1761,25 @@ function renderBudgetsScreen(fin) {
   const macroCommEl = document.getElementById("plan-macro-commitments");
   const macroGoalEl = document.getElementById("plan-macro-goal");
   const macroFlexEl = document.getElementById("plan-macro-flexible");
+  const macroBarComm = document.getElementById("macro-bar-commitments");
+  const macroBarGoal = document.getElementById("macro-bar-goal");
+  const macroBarFlex = document.getElementById("macro-bar-flexible");
   if (fin) {
-    const totalCycleCommitments = fin.paidBillsThisCycle + fin.billsBeforePayday;
-    const totalFlexPlanned = ArthivaState.budgets.reduce((s, b) => s + (Number(b.limit) || 0), 0);
-    if (macroCommEl) macroCommEl.textContent = formatINR(totalCycleCommitments);
-    if (macroGoalEl) macroGoalEl.textContent = formatINR(ArthivaState.goal.monthlyAllocation);
-    if (macroFlexEl) macroFlexEl.textContent = formatINR(totalFlexPlanned);
+    const totalBillsDue = fin.billsBeforePayday;
+    const goalAside = fin.savingsToSetAside;
+    const safeAmount = Math.max(0, fin.safeToSpend);
+    const totalPool = (totalBillsDue + goalAside + safeAmount) || 1;
+
+    if (macroCommEl) macroCommEl.textContent = formatINR(totalBillsDue);
+    if (macroGoalEl) macroGoalEl.textContent = formatINR(goalAside);
+    if (macroFlexEl) macroFlexEl.textContent = formatINR(safeAmount);
+
+    if (macroBarComm) macroBarComm.style.width = `${Math.round((totalBillsDue / totalPool) * 100)}%`;
+    if (macroBarGoal) macroBarGoal.style.width = `${Math.round((goalAside / totalPool) * 100)}%`;
+    if (macroBarFlex) macroBarFlex.style.width = `${Math.round((safeAmount / totalPool) * 100)}%`;
   }
 
-  // Render Recent Expenses List on Plan Screen
-  renderPlanRecentExpenses();
-
+  // Category cards rendering
   container.innerHTML = ArthivaState.budgets.map((b, idx) => {
     const catExpenses = ArthivaState.expenses.filter(e => 
       e.category.toLowerCase().trim() === b.category.toLowerCase().trim() ||
@@ -1773,38 +1788,52 @@ function renderBudgetsScreen(fin) {
     );
     const totalSpent = catExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
     const limit = b.limit || 5000;
-    const pct = Math.min(100, Math.round((totalSpent / limit) * 100));
+    const spentPct = limit > 0 ? Math.round((totalSpent / limit) * 100) : 0;
+    const barPct = Math.min(100, Math.max(0, spentPct));
     const isOver = totalSpent > limit;
-    const isApproaching = !isOver && pct >= 80;
+    const isApproaching = !isOver && spentPct >= 80;
     const isExpanded = ArthivaState.activeExpandedCategory === b.category;
+
+    const remainingAmount = Math.max(0, limit - totalSpent);
+    const remainingPct = limit > 0 ? Math.max(0, Math.round((remainingAmount / limit) * 100)) : 0;
 
     const statusLabel = isOver ? "Over Budget" : (isApproaching ? "Approaching Limit" : "Within Budget");
     const statusClass = isOver ? "over" : (isApproaching ? "approaching" : "within");
 
+    const noteText = isOver
+      ? `Exceeded by ${formatINR(totalSpent - limit)} (${spentPct}% spent)`
+      : `${formatINR(remainingAmount)} remaining (${remainingPct}%)`;
+
     return `
       <div class="budget-category-card ${isExpanded ? 'expanded' : ''}" id="bcat-card-${idx}">
         <div class="bcat-header">
-          <div class="bcat-title" onclick="toggleExpandCategory('${escapeHTML(b.category)}')">
-            <span style="color: var(--primary);">${getCategoryIconSVG(b.category)}</span>
-            <span>${escapeHTML(b.category)}</span>
+          <div class="bcat-icon-badge" onclick="toggleExpandCategory('${escapeHTML(b.category)}')">
+            <span style="color: var(--primary); display: flex; align-items: center;">${getCategoryIconSVG(b.category)}</span>
           </div>
-          <div class="bcat-right-meta">
-            <div class="bcat-spent tabular-nums" onclick="toggleExpandCategory('${escapeHTML(b.category)}')">
-              ${formatINR(totalSpent)} <span style="font-size: 11.5px; color: var(--text-muted); font-weight: normal;">/ ${formatINR(limit)}</span>
-            </div>
+          <div class="bcat-title" onclick="toggleExpandCategory('${escapeHTML(b.category)}')" title="${escapeHTML(b.category)}">
+            ${escapeHTML(b.category)}
+          </div>
+          <div class="bcat-amount-group tabular-nums" onclick="toggleExpandCategory('${escapeHTML(b.category)}')">
+            <span class="bcat-spent-val">${formatINR(totalSpent)}</span>
+            <span class="bcat-limit-sep">/</span>
+            <span class="bcat-limit-val">${formatINR(limit)}</span>
+          </div>
+          <div class="bcat-actions-group">
             <button class="icon-btn-sm" title="Edit Budget" onclick="event.stopPropagation(); openEditCategoryModal('${escapeHTML(b.category)}')">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
             </button>
-            <svg class="bcat-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" onclick="toggleExpandCategory('${escapeHTML(b.category)}')"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <button class="icon-btn-sm bcat-expand-btn" title="Toggle expenses" onclick="event.stopPropagation(); toggleExpandCategory('${escapeHTML(b.category)}')">
+              <svg class="bcat-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
           </div>
         </div>
 
         <div class="bcat-bar-wrap">
           <div class="bcat-bar">
-            <div class="bcat-fill ${isOver ? 'caution' : 'normal'}" style="width: ${pct}%;"></div>
+            <div class="bcat-fill ${isOver ? 'caution' : 'normal'}" style="width: ${barPct}%;"></div>
           </div>
           <div class="bcat-note ${isOver ? 'caution' : ''}" style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
-            <span>${isOver ? 'Exceeded by ' + formatINR(totalSpent - limit) : formatINR(limit - totalSpent) + ' remaining'} (${pct}%)</span>
+            <span>${noteText}</span>
             <span class="status-pill ${statusClass}">${statusLabel}</span>
           </div>
         </div>
@@ -1822,7 +1851,7 @@ function renderBudgetsScreen(fin) {
               </div>
               <div class="cexp-right">
                 <span class="cexp-amount">${formatINR(e.amount)}</span>
-                <button class="cexp-delete" onclick="deleteExpenseRecord('${e.id}')" title="Delete expense">✕</button>
+                <button class="cexp-delete" onclick="deleteExpenseRecord('${e.id}')" title="Delete recorded expense" aria-label="Delete recorded expense">✕</button>
               </div>
             </div>
           `).join("") : `
@@ -1885,9 +1914,9 @@ function renderPlanRecentExpenses() {
             ${e.note ? `<span style="color: var(--text-muted);"> · ${escapeHTML(e.note)}</span>` : ""}
           </div>
         </div>
-        <div class="cexp-right" style="display: flex; align-items: center; gap: 10px;">
+        <div class="cexp-right" style="display: flex; align-items: center; gap: 8px;">
           <span class="cexp-amount tabular-nums" style="font-weight: 700; font-size: 13.5px; color: var(--text-primary);">${formatINR(e.amount)}</span>
-          <button class="cexp-delete" onclick="deleteExpenseRecord('${e.id}')" title="Delete expense" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; padding: 4px;">✕</button>
+          <button class="cexp-delete" onclick="deleteExpenseRecord('${e.id}')" title="Delete recorded expense" aria-label="Delete recorded expense">✕</button>
         </div>
       </div>
     `;
@@ -1898,7 +1927,33 @@ function renderPlanRecentExpenses() {
 // 6B. Visual, Data-Driven Insights Dashboard (Section 4)
 // --------------------------------------------------------------------------
 
-const CHART_PALETTE = ["#0B6B5A", "#D97706", "#2563EB", "#7C3AED", "#DB2777", "#0891B2", "#4F46E5", "#64748B"];
+const CHART_PALETTE = [
+  "#7C3AED", // Royal Purple
+  "#2563EB", // Blue
+  "#059669", // Emerald
+  "#D97706", // Amber
+  "#DB2777", // Pink
+  "#4F46E5", // Indigo
+  "#0891B2", // Cyan
+  "#EA580C"  // Orange
+];
+
+function toggleInsightsMenu() {
+  const menu = document.getElementById("insights-top-menu");
+  if (!menu) return;
+  menu.style.display = menu.style.display === "none" ? "block" : "none";
+}
+
+function toggleFullRecapTiles() {
+  const container = document.getElementById("recap-kpi-tiles-container");
+  const label = document.getElementById("recap-toggle-label");
+  if (!container) return;
+  const isHidden = container.style.display === "none";
+  container.style.display = isHidden ? "block" : "none";
+  if (label) {
+    label.textContent = isHidden ? "Hide full recap (6 key metrics) ▲" : "See full recap (6 key metrics) ▼";
+  }
+}
 
 function onInsightsPeriodChange(period) {
   ArthivaState.insightsPeriod = period === "previous" ? "previous" : "current";
@@ -2071,6 +2126,16 @@ function renderInsightsScreen(fin) {
   if (insEmptyCard) insEmptyCard.style.display = "none";
   if (insPopulatedContainer) insPopulatedContainer.style.display = "block";
   if (insRecSection) insRecSection.style.display = "block";
+
+  // 1 Headline sentence
+  const headlineEl = document.getElementById("ins-headline-sentence");
+  if (headlineEl) {
+    if (finObj.safeToSpend < 0) {
+      headlineEl.textContent = `Pacing alert: You are projected to be ${formatINR(Math.abs(finObj.safeToSpend))} short before your payday on ${finObj.cycleCtx.endStr}.`;
+    } else {
+      headlineEl.textContent = `You are on track: ${formatINR(finObj.safeToSpend)} is safe to spend across the next ${finObj.daysLeft} days to payday (${formatINR(finObj.dailyRate)}/day).`;
+    }
+  }
 
   // 1. Update 6 Summary Cards
   const incVal = document.getElementById("ins-income-val");
@@ -3337,9 +3402,42 @@ function saveEditedCategory() {
     }
   });
 
+  saveStateToStorage();
   closeModalDialog("edit-category-modal");
   renderApp();
   showToast(`Updated "${newName}" budget to ${formatINR(newLimit)}!`);
+}
+
+let pendingDeleteCategoryName = null;
+
+function promptDeleteCurrentEditedCategory() {
+  const nameInput = document.getElementById("edit-cat-name-input");
+  const catName = nameInput ? nameInput.getAttribute("data-original") || nameInput.value.trim() : "";
+  if (!catName) return;
+
+  pendingDeleteCategoryName = catName;
+  const textEl = document.getElementById("confirm-delete-cat-text");
+  if (textEl) {
+    const countAssoc = ArthivaState.expenses.filter(e => e.category && e.category.toLowerCase() === catName.toLowerCase()).length;
+    textEl.textContent = countAssoc > 0
+      ? `Are you sure you want to delete "${catName}"? This will also remove ${countAssoc} recorded expense${countAssoc > 1 ? 's' : ''} under this category.`
+      : `Are you sure you want to delete "${catName}"?`;
+  }
+
+  openModalDialog("confirm-delete-category-modal");
+}
+
+function confirmDeleteCategoryFromModal() {
+  closeModalDialog("confirm-delete-category-modal");
+  closeModalDialog("edit-category-modal");
+  if (pendingDeleteCategoryName) {
+    deleteCategoryCardDirectly(pendingDeleteCategoryName);
+    pendingDeleteCategoryName = null;
+  }
+}
+
+function deleteCurrentCategory() {
+  promptDeleteCurrentEditedCategory();
 }
 
 /**
@@ -3538,8 +3636,20 @@ function openGoalDetailModal(goalId) {
         `).join("")
       : `<div style="font-size:11.5px;color:var(--text-muted);padding:8px 0;">No contributions logged yet.</div>`;
 
+    const autoDebitBadge = g.autoDebit !== false
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;background:rgba(16,185,129,0.12);color:#059669;font-weight:700;font-size:11px;">
+           <span style="width:6px;height:6px;border-radius:50%;background:#10B981;"></span>Auto-Debit Active
+         </span>`
+      : `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;background:rgba(107,114,128,0.12);color:var(--text-muted);font-weight:600;font-size:11px;">
+           Manual Transfer
+         </span>`;
+
     bodyEl.innerHTML = `
       <div style="padding:12px;background:var(--bg-subtle);border-radius:12px;border:1px solid var(--border-subtle);margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--border-subtle);">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Goal Target vs Recurring Saving</span>
+          ${autoDebitBadge}
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
           <div>
             <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Saved vs Target</div>
@@ -3554,8 +3664,8 @@ function openGoalDetailModal(goalId) {
             <div style="font-size:12.5px;font-weight:700;">${proj.plannedMonthStr} (${proj.cyclesRemaining} cycles)</div>
           </div>
           <div>
-            <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Recommended / Cycle</div>
-            <div style="font-size:12.5px;font-weight:800;color:var(--primary);" class="tabular-nums">${formatINR(proj.recommendedPerCycle)}/mo</div>
+            <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Every Month Recurring</div>
+            <div style="font-size:12.5px;font-weight:800;color:var(--primary);" class="tabular-nums">${formatINR(g.monthlyAllocation || proj.recommendedPerCycle)}/mo</div>
           </div>
         </div>
         <div class="goal-bar-track" style="margin-bottom:8px;">
@@ -3576,6 +3686,72 @@ function openGoalDetailModal(goalId) {
   openBottomSheet("goal-detail-sheet");
 }
 
+function openEditGoalFromDetail() {
+  closeBottomSheet("goal-detail-sheet");
+  if (ArthivaState.selectedGoalId) {
+    openEditGoalModal(ArthivaState.selectedGoalId);
+  } else if (ArthivaState.goals && ArthivaState.goals.length > 0) {
+    openEditGoalModal(ArthivaState.goals[0].id);
+  }
+}
+
+function deleteSelectedGoalFromDetail() {
+  const goalId = ArthivaState.selectedGoalId || (ArthivaState.goals && ArthivaState.goals[0] ? ArthivaState.goals[0].id : null);
+  if (!goalId) return;
+  closeBottomSheet("goal-detail-sheet");
+  deleteGoalDirectly(goalId);
+}
+
+function deleteGoalDirectly(goalId) {
+  if (!goalId) return;
+  if (!Array.isArray(ArthivaState.goals)) {
+    ArthivaState.goals = [];
+  }
+  const idx = ArthivaState.goals.findIndex(g => g.id === goalId);
+  if (idx === -1) return;
+
+  const deletedGoal = ArthivaState.goals[idx];
+  lastDeletedGoalBackup = {
+    goal: JSON.parse(JSON.stringify(deletedGoal)),
+    index: idx
+  };
+
+  ArthivaState.goals.splice(idx, 1);
+
+  // If active goal was deleted, point to remaining or clear
+  if (ArthivaState.selectedGoalId === goalId) {
+    ArthivaState.selectedGoalId = ArthivaState.goals[0] ? ArthivaState.goals[0].id : null;
+  }
+
+  saveStateToStorage();
+  renderApp();
+
+  if (window.ArthivaSupabase && typeof window.ArthivaSupabase.deleteRecord === "function") {
+    window.ArthivaSupabase.deleteRecord("goals", goalId).catch(err => {
+      console.warn("[Delete Goal] Supabase delete notice:", err);
+    });
+  }
+
+  showToastWithUndo(`Goal "${deletedGoal.title}" deleted.`, "undoGoal");
+}
+
+function undoGoalDeletion() {
+  if (!lastDeletedGoalBackup || !lastDeletedGoalBackup.goal) return;
+  const restoredGoal = lastDeletedGoalBackup.goal;
+  const targetIdx = typeof lastDeletedGoalBackup.index === "number" ? lastDeletedGoalBackup.index : ArthivaState.goals.length;
+
+  if (!Array.isArray(ArthivaState.goals)) {
+    ArthivaState.goals = [];
+  }
+  ArthivaState.goals.splice(targetIdx, 0, restoredGoal);
+  ArthivaState.selectedGoalId = restoredGoal.id;
+  lastDeletedGoalBackup = null;
+
+  saveStateToStorage();
+  renderApp();
+  showToast(`Goal "${restoredGoal.title}" restored.`);
+}
+
 function openCreateGoalModal() {
   const idInput = document.getElementById("edit-goal-id-input");
   const heading = document.getElementById("goal-modal-heading");
@@ -3586,6 +3762,8 @@ function openCreateGoalModal() {
   const monthlyInput = document.getElementById("edit-goal-monthly-input");
   const dateInput = document.getElementById("edit-goal-date-input");
   const accountInput = document.getElementById("edit-goal-account-input");
+  const autodebitToggle = document.getElementById("edit-goal-autodebit-toggle");
+  const delWrap = document.getElementById("edit-goal-delete-container");
 
   if (idInput) idInput.value = "NEW";
   if (heading) heading.textContent = "Create New Savings Goal";
@@ -3596,6 +3774,8 @@ function openCreateGoalModal() {
   if (monthlyInput) monthlyInput.value = 5000;
   if (dateInput) dateInput.value = "2027-08-31";
   if (accountInput) accountInput.value = "HDFC Savings ···4821 / Liquid Fund SIP";
+  if (autodebitToggle) autodebitToggle.checked = true;
+  if (delWrap) delWrap.style.display = "none";
 
   updateGoalProjectionInModal();
   openModalDialog("edit-goal-modal");
@@ -3612,6 +3792,8 @@ function openEditGoalModal(goalId) {
   const monthlyInput = document.getElementById("edit-goal-monthly-input");
   const dateInput = document.getElementById("edit-goal-date-input");
   const accountInput = document.getElementById("edit-goal-account-input");
+  const autodebitToggle = document.getElementById("edit-goal-autodebit-toggle");
+  const delWrap = document.getElementById("edit-goal-delete-container");
 
   if (idInput) idInput.value = g.id;
   if (heading) heading.textContent = "Edit Savings Goal";
@@ -3622,9 +3804,38 @@ function openEditGoalModal(goalId) {
   if (monthlyInput) monthlyInput.value = g.monthlyAllocation;
   if (dateInput) dateInput.value = g.targetDate || "2027-03-31";
   if (accountInput) accountInput.value = g.linkedAccount || "HDFC Savings ···4821 / Liquid Fund SIP";
+  if (autodebitToggle) autodebitToggle.checked = g.autoDebit !== false;
+  if (delWrap) delWrap.style.display = "flex";
 
   updateGoalProjectionInModal();
   openModalDialog("edit-goal-modal");
+}
+
+let pendingDeleteGoalId = null;
+
+function promptDeleteCurrentEditedGoal() {
+  const idInput = document.getElementById("edit-goal-id-input");
+  const goalId = idInput ? idInput.value : null;
+  if (!goalId || goalId === "NEW") return;
+
+  const g = getGoalById(goalId);
+  pendingDeleteGoalId = goalId;
+
+  const textEl = document.getElementById("confirm-delete-goal-text");
+  if (textEl) {
+    textEl.textContent = `Are you sure you want to delete "${g.title}"? This will stop future cycle allocations and remove the goal from your dashboard.`;
+  }
+
+  openModalDialog("confirm-delete-goal-modal");
+}
+
+function confirmDeleteGoalFromModal() {
+  closeModalDialog("confirm-delete-goal-modal");
+  closeModalDialog("edit-goal-modal");
+  if (pendingDeleteGoalId) {
+    deleteGoalDirectly(pendingDeleteGoalId);
+    pendingDeleteGoalId = null;
+  }
 }
 
 function updateGoalProjectionInModal() {
@@ -3658,6 +3869,7 @@ function saveEditedGoal() {
   const monthlyInput = document.getElementById("edit-goal-monthly-input");
   const dateInput = document.getElementById("edit-goal-date-input");
   const accountInput = document.getElementById("edit-goal-account-input");
+  const autodebitToggle = document.getElementById("edit-goal-autodebit-toggle");
 
   const modeOrId = idInput ? idInput.value : "goal-1";
   const title = titleInput ? titleInput.value.trim() : "";
@@ -3666,6 +3878,7 @@ function saveEditedGoal() {
   const monthly = Number(monthlyInput ? monthlyInput.value : 0);
   const targetDate = dateInput ? dateInput.value : "2027-03-31";
   const linkedAccount = accountInput ? accountInput.value.trim() : "HDFC Savings ···4821";
+  const autoDebit = autodebitToggle ? autodebitToggle.checked : true;
 
   if (!title || isNaN(target) || target <= 0 || isNaN(monthly) || monthly < 0 || isNaN(saved) || saved < 0) {
     showToast("Please enter valid goal details and amounts.");
@@ -3683,11 +3896,13 @@ function saveEditedGoal() {
       savedThisCycle: 0,
       frequency: "Monthly",
       linkedAccount,
+      autoDebit,
       celebratedMilestone: 0,
       contributions: saved > 0 ? [{ id: "gc-init-" + Date.now(), date: "2026-10-20", amount: saved, note: "Initial saved balance" }] : []
     };
     ArthivaState.goals.push(newGoal);
     closeModalDialog("edit-goal-modal");
+    saveStateToStorage();
     renderApp();
     showToast(`Created new savings goal "${title}"!`);
     return;
@@ -3700,8 +3915,10 @@ function saveEditedGoal() {
   g.monthlyAllocation = monthly;
   g.targetDate = targetDate;
   g.linkedAccount = linkedAccount;
+  g.autoDebit = autoDebit;
 
   closeModalDialog("edit-goal-modal");
+  saveStateToStorage();
   renderApp();
   showToast(`Updated savings goal "${title}"!`);
 }
@@ -3901,29 +4118,9 @@ function onSplitAmountInput(index) {
 
 function validateQuickExpenseFields() {
   const isSplit = ArthivaState.quickExpenseMode === "split";
-  const merchInput = document.getElementById("quick-expense-merchant");
-  const dateInput = document.getElementById("quick-expense-date");
   const saveBtn = document.getElementById("btn-save-quick-expense");
 
   let baseValid = isSplit ? validateQuickExpenseSplit() : validateQuickExpenseSingle();
-
-  // Validate Merchant Name (required)
-  const merchVal = merchInput ? merchInput.value.trim() : "";
-  if (!merchVal) {
-    setInlineError("quick-merchant-error", "quick-expense-merchant", "Store / Merchant name is required.");
-    baseValid = false;
-  } else {
-    setInlineError("quick-merchant-error", "quick-expense-merchant", "");
-  }
-
-  // Validate Transaction Date (required)
-  const dateVal = dateInput ? dateInput.value.trim() : "";
-  if (!dateVal) {
-    setInlineError("quick-date-error", "quick-expense-date", "Transaction date is required.");
-    baseValid = false;
-  } else {
-    setInlineError("quick-date-error", "quick-expense-date", "");
-  }
 
   if (saveBtn) saveBtn.disabled = !baseValid;
   return baseValid;
@@ -4059,7 +4256,8 @@ async function submitQuickExpense() {
   const merchant = merchInput ? merchInput.value.trim() : "";
   const note = noteInput ? noteInput.value.trim() : "";
   const date = dateInput ? dateInput.value.trim() : new Date().toISOString().split("T")[0];
-  const shouldDeduct = deductCheck ? deductCheck.checked : true;
+  // Product UX rule: Balance check-in is the primary habit. When an expense is logged, deduct it from the balance automatically.
+  const shouldDeduct = true;
   const isSplit = ArthivaState.quickExpenseMode === "split";
 
   // Prevent multiple submits & show loading state
@@ -4223,11 +4421,11 @@ async function submitQuickExpense() {
     closeBottomSheet("quick-expense-sheet");
     showToast(`Expense of ${formatINR(totalAmount)} added`);
 
-    // Smooth scroll to the Recent Expenses section on Plan screen
+    // Smooth scroll to the updated category card on Plan screen
     setTimeout(() => {
-      const recentExpensesSection = document.getElementById("plan-recent-expenses-section");
-      if (recentExpensesSection) {
-        recentExpensesSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const catCard = document.querySelector(".budget-category-card.expanded");
+      if (catCard) {
+        catCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
     }, 120);
 
@@ -4243,21 +4441,287 @@ async function submitQuickExpense() {
   }
 }
 
-function deleteExpenseRecord(expenseId) {
-  ArthivaState.expenses = ArthivaState.expenses.filter(e => e.id !== expenseId);
+// Undo deleted category or expense
+let lastDeletedCategoryBackup = null;
+let lastDeletedExpenseBackup = null;
+let lastDeletedGoalBackup = null;
+
+function deleteCategoryCardDirectly(catName) {
+  if (!catName) return;
+
+  // Snapshot for undo
+  const existingBudget = ArthivaState.budgets.find(b => b.category.toLowerCase() === catName.toLowerCase());
+  const existingCatObj = (ArthivaState.categories || []).find(c => c.name.toLowerCase() === catName.toLowerCase());
+  const relatedExpenses = ArthivaState.expenses.filter(e => e.category && e.category.toLowerCase() === catName.toLowerCase());
+
+  lastDeletedCategoryBackup = {
+    budget: existingBudget ? JSON.parse(JSON.stringify(existingBudget)) : null,
+    categoryObj: existingCatObj ? JSON.parse(JSON.stringify(existingCatObj)) : null,
+    expenses: JSON.parse(JSON.stringify(relatedExpenses))
+  };
+
+  // Remove category and its budget
+  ArthivaState.budgets = (ArthivaState.budgets || []).filter(b => b.category.toLowerCase() !== catName.toLowerCase());
+  ArthivaState.categories = (ArthivaState.categories || []).filter(c => c.name.toLowerCase() !== catName.toLowerCase());
+  ArthivaState.expenses = ArthivaState.expenses.filter(e => !e.category || e.category.toLowerCase() !== catName.toLowerCase());
+
+  if (ArthivaState.activeExpandedCategory === catName) {
+    ArthivaState.activeExpandedCategory = null;
+  }
+
   saveStateToStorage();
   renderApp();
+  populateCategoryDropdowns();
+
+  if (window.ArthivaSupabase && typeof window.ArthivaSupabase.deleteRecord === "function") {
+    try {
+      const client = (typeof getClient === "function" ? getClient() : null) || window.ArthivaSupabase.getClient?.();
+      if (client) {
+        client.from("budgets").delete().ilike("category", catName).then(() => {}).catch(() => {});
+        relatedExpenses.forEach(e => {
+          window.ArthivaSupabase.deleteRecord("expenses", e.id).catch(() => {});
+        });
+      }
+    } catch (err) {
+      console.warn("[Delete Category] Supabase notice:", err);
+    }
+  }
+
+  showToastWithUndo(`Category "${catName}" deleted.`, "undoCategory");
+}
+
+function undoCategoryDeletion() {
+  if (!lastDeletedCategoryBackup) return;
+  if (lastDeletedCategoryBackup.budget) {
+    ArthivaState.budgets.push(lastDeletedCategoryBackup.budget);
+  }
+  if (lastDeletedCategoryBackup.categoryObj && !(ArthivaState.categories || []).some(c => c.name.toLowerCase() === lastDeletedCategoryBackup.categoryObj.name.toLowerCase())) {
+    ArthivaState.categories.push(lastDeletedCategoryBackup.categoryObj);
+  }
+  if (lastDeletedCategoryBackup.expenses && lastDeletedCategoryBackup.expenses.length > 0) {
+    ArthivaState.expenses.push(...lastDeletedCategoryBackup.expenses);
+  }
+
+  lastDeletedCategoryBackup = null;
+  saveStateToStorage();
+  renderApp();
+  populateCategoryDropdowns();
+  showToast("Category and its expenses restored.");
+}
+
+function deleteExpenseRecord(expenseId) {
+  const expenseToDelete = ArthivaState.expenses.find(e => e.id === expenseId);
+  if (!expenseToDelete) return;
+
+  const refundAmount = Number(expenseToDelete.amount) || 0;
+  lastDeletedExpenseBackup = JSON.parse(JSON.stringify(expenseToDelete));
+  ArthivaState.expenses = ArthivaState.expenses.filter(e => e.id !== expenseId);
+
+  // Restore balance when expense is deleted
+  if (refundAmount > 0) {
+    const prevBal = ArthivaState.balance.amount;
+    const restoredBal = prevBal + refundAmount;
+    ArthivaState.balance.amount = restoredBal;
+    ArthivaState.balance.lastUpdated = new Date().toISOString();
+    ArthivaState.balance.label = "You updated · Just now";
+
+    const now = new Date();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const dateStr = `${now.getDate()} ${months[now.getMonth()]}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+    ArthivaState.balanceHistory.unshift({
+      id: "bal-" + Date.now(),
+      date: dateStr,
+      month: formatMonthYear(now),
+      timestamp: now.toISOString(),
+      previousBalance: prevBal,
+      newBalance: restoredBal,
+      changeAmount: refundAmount,
+      reason: "Correction to previous balance",
+      source: "Expense deletion",
+      notes: `Reversed expense: ${expenseToDelete.merchant || "Direct purchase"} (${formatINR(refundAmount)})`
+    });
+
+    if (window.ArthivaSupabase && typeof window.ArthivaSupabase.updateRecord === "function") {
+      window.ArthivaSupabase.getUser().then(u => {
+        if (u?.id) {
+          window.ArthivaSupabase.updateRecord("profiles", u.id, {
+            current_balance: restoredBal,
+            updated_at: new Date().toISOString()
+          });
+        }
+      }).catch(() => {});
+    }
+  }
+
+  saveStateToStorage();
+  renderApp();
+
   if (window.ArthivaSupabase && typeof window.ArthivaSupabase.deleteRecord === "function") {
     window.ArthivaSupabase.deleteRecord("expenses", expenseId).catch(err => {
       console.warn("[Delete Expense] Supabase delete notice:", err);
     });
   }
-  showToast("Expense removed from records.");
+
+  showToastWithUndo("Expense deleted.", "undoExpense");
+}
+
+function undoExpenseDeletion() {
+  if (!lastDeletedExpenseBackup) return;
+  const restoredExp = lastDeletedExpenseBackup;
+  const reDeductAmt = Number(restoredExp.amount) || 0;
+
+  ArthivaState.expenses.unshift(restoredExp);
+  if (reDeductAmt > 0) {
+    ArthivaState.balance.amount = Math.max(0, ArthivaState.balance.amount - reDeductAmt);
+  }
+  lastDeletedExpenseBackup = null;
+  saveStateToStorage();
+  renderApp();
+  showToast("Expense restored.");
+}
+
+function showToastWithUndo(message, undoActionType) {
+  const toast = document.getElementById("app-toast");
+  if (!toast) return;
+
+  let undoFn = "undoExpenseDeletion()";
+  if (undoActionType === "undoCategory") {
+    undoFn = "undoCategoryDeletion()";
+  } else if (undoActionType === "undoGoal") {
+    undoFn = "undoGoalDeletion()";
+  }
+
+  toast.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>${escapeHTML(message)}</span>
+    <button type="button" class="toast-undo-btn" onclick="${undoFn}">Undo</button>
+  `;
+  toast.classList.add("show");
+
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 5000);
+}
+
+// Progressive Disclosure: Helper Toggles
+function toggleBillMoreOptions() {
+  const menu = document.getElementById("bill-more-actions-menu");
+  const label = document.getElementById("bill-more-options-label");
+  if (!menu) return;
+  const isHidden = menu.style.display === "none" || !menu.style.display;
+  menu.style.display = isHidden ? "flex" : "none";
+  if (label) label.textContent = isHidden ? "Fewer actions ▲" : "More actions ▼";
+}
+
+function toggleQuickSplitMode() {
+  const currentMode = ArthivaState.quickExpenseMode || "single";
+  setQuickExpenseMode(currentMode === "single" ? "split" : "single");
+}
+
+function toggleQuickExpenseOptionalFields() {
+  const drawer = document.getElementById("quick-expense-optional-fields");
+  const label = document.getElementById("quick-expense-opt-toggle-label");
+  if (!drawer) return;
+  const isHidden = drawer.style.display === "none" || !drawer.style.display;
+  drawer.style.display = isHidden ? "block" : "none";
+  if (label) label.textContent = isHidden ? "− Hide extra fields ▲" : "+ Add merchant or change date (optional) ▼";
+}
+
+function toggleOtherPacingOptions() {
+  const drawer = document.getElementById("other-pacing-options-drawer");
+  const label = document.getElementById("other-pacing-options-label");
+  if (!drawer) return;
+  const isHidden = drawer.style.display === "none" || !drawer.style.display;
+  drawer.style.display = isHidden ? "flex" : "none";
+  if (label) label.textContent = isHidden ? "Other options (2) ▲" : "Other options (2) ▼";
 }
 
 // --------------------------------------------------------------------------
 // 11. Actionable Risk Advisor Options
 // --------------------------------------------------------------------------
+
+function applyRecommendedShortfallFix() {
+  applyPacingAdjustment();
+}
+
+function updateGuidedNextStepContent() {
+  const badgeEl = document.getElementById("guided-step-badge");
+  const titleEl = document.getElementById("guided-step-title");
+  const subtitleEl = document.getElementById("guided-step-subtitle");
+  const chipsEl = document.getElementById("guided-step-quick-chips");
+  const btnEl = document.getElementById("guided-step-action-btn");
+
+  const billsCount = (ArthivaState.commitments || []).length;
+  const sipsCount = (ArthivaState.commitments || []).filter(c => c.category.toLowerCase().includes("sip") || c.name.toLowerCase().includes("sip")).length;
+  const goalsCount = (ArthivaState.goals || []).length;
+
+  if (billsCount === 0) {
+    if (badgeEl) badgeEl.textContent = "40% accurate";
+    if (titleEl) titleEl.textContent = "Add rent & EMIs → biggest impact";
+    if (subtitleEl) subtitleEl.textContent = "Your estimate is 40% accurate · Add rent & EMIs to lock in non-negotiables.";
+    if (chipsEl) chipsEl.style.display = "flex";
+    if (btnEl) {
+      btnEl.textContent = "Add rent or EMI";
+      btnEl.onclick = () => openAddCommitmentSheet();
+    }
+  } else if (sipsCount === 0) {
+    if (badgeEl) badgeEl.textContent = "65% accurate";
+    if (titleEl) titleEl.textContent = "Add mutual funds & SIPs";
+    if (subtitleEl) subtitleEl.textContent = "Protect your investments from daily accidental spending.";
+    if (chipsEl) chipsEl.style.display = "none";
+    if (btnEl) {
+      btnEl.textContent = "Add monthly SIP";
+      btnEl.onclick = () => quickAddChipBill("Parag Parikh SIP", 3000, 10);
+    }
+  } else if (goalsCount === 0) {
+    if (badgeEl) badgeEl.textContent = "85% accurate";
+    if (titleEl) titleEl.textContent = "Add first goal (Emergency Medical Buffer)";
+    if (subtitleEl) subtitleEl.textContent = "Protect ₹60,000 for unexpected medical needs before extra spending.";
+    if (chipsEl) chipsEl.style.display = "none";
+    if (btnEl) {
+      btnEl.textContent = "Set up Emergency Buffer";
+      btnEl.onclick = () => openCreateGoalModal();
+    }
+  } else {
+    if (badgeEl) badgeEl.textContent = "95% accurate";
+    if (titleEl) titleEl.textContent = "Import bank statement";
+    if (subtitleEl) subtitleEl.textContent = "Auto-reconcile your past month transactions with 1-click import.";
+    if (chipsEl) chipsEl.style.display = "none";
+    if (btnEl) {
+      btnEl.textContent = "Import statement";
+      btnEl.onclick = () => openStatementUploadModal();
+    }
+  }
+}
+
+function quickAddChipBill(name, defaultAmt, defaultDay) {
+  const currentSafe = calculateFinancials().safeToSpend;
+  const newBill = {
+    id: "bill-" + Date.now(),
+    name,
+    category: name.includes("SIP") ? "Mutual funds and SIPs" : (name.includes("Rent") ? "Rent" : (name.includes("EMI") ? "EMIs and loans" : "Electricity and utilities")),
+    amount: defaultAmt,
+    dueDate: `2026-10-${String(defaultDay).padStart(2, "0")}`,
+    dueDateFormatted: `${defaultDay} Oct`,
+    method: "Auto-debit",
+    status: "upcoming",
+    recurrence: "Monthly",
+    notes: "Guided quick-add",
+    paidDate: null
+  };
+  ArthivaState.commitments.push(newBill);
+  saveStateToStorage();
+  renderApp();
+
+  const newSafe = calculateFinancials().safeToSpend;
+  showToast(`Added ${name}! Safe to spend updated: ${formatINR(currentSafe)} → ${formatINR(newSafe)}`);
+}
+
+function openQuickBillModal() {
+  openAddCommitmentSheet();
+}
 
 function openRiskResolutionSheet() {
   openBottomSheet("risk-resolution-sheet");
@@ -6605,6 +7069,7 @@ function createEmptyOnboardingDraft() {
     householdMembers: [],
     takeHome: "",
     paydayDay: 1,
+    currentBalance: "",
     otherIncome: "",
     bankAccounts: [],
     bills: [],
@@ -6615,7 +7080,13 @@ function createEmptyOnboardingDraft() {
 
 function confirmResetToNewUser() {
   if (window.ARTHIVA_ENV === "production") return;
+  closeAllSheets();
   closeModalDialog("reset-new-user-modal");
+  document.querySelectorAll(".modal-backdrop, .sheet-backdrop, .dialog-modal, .bottom-sheet").forEach(el => {
+    el.classList.remove("active");
+  });
+  const globalOverlay = document.getElementById("global-sheet-overlay");
+  if (globalOverlay) globalOverlay.classList.remove("active");
 
   try {
     localStorage.clear();
@@ -7166,7 +7637,8 @@ function continueVerifiedUserIntoSignup() {
   localStorage.setItem("arthiva_session_v2", "true");
   saveStateToStorage();
 
-  openSetupAppLockView();
+  // Onboarding in 60 seconds: Go straight from OTP verification to the 3-question flow
+  startOnboardingFlow(1);
 }
 
 // --------------------------------------------------------------------------
@@ -7393,6 +7865,8 @@ function prefillOnboardingForm(savedDraft) {
   if (hhNameInput) hhNameInput.value = onboardingDraft.householdName || "";
   if (salaryInput) salaryInput.value = onboardingDraft.takeHome !== "" ? onboardingDraft.takeHome : "";
   if (paydaySelect) paydaySelect.value = String(onboardingDraft.paydayDay || 1);
+  const balInput = document.getElementById("onboarding-balance-input");
+  if (balInput) balInput.value = (onboardingDraft.currentBalance !== "" && onboardingDraft.currentBalance !== undefined) ? onboardingDraft.currentBalance : ((ArthivaState.balance && ArthivaState.balance.amount > 0) ? ArthivaState.balance.amount : "");
   if (otherIncInput) otherIncInput.value = onboardingDraft.otherIncome !== "" ? onboardingDraft.otherIncome : "";
 
   setOnboardingHouseholdMode(onboardingDraft.householdMode || "Individual");
@@ -7821,267 +8295,120 @@ function renderOnboardingGoalsList() {
 }
 
 function saveOnboardingDraft() {
-  const nameInput = document.getElementById("onb-profile-name-input");
-  const secInput = document.getElementById("onb-secondary-contact-input");
-  const hhNameInput = document.getElementById("onb-household-name-input");
   const salaryInput = document.getElementById("onboarding-salary-input");
   const paydaySelect = document.getElementById("onboarding-payday-select");
-  const otherIncInput = document.getElementById("onboarding-other-income-input");
+  const balInput = document.getElementById("onboarding-balance-input");
 
-  if (nameInput) onboardingDraft.name = nameInput.value.trim();
-  if (secInput) onboardingDraft.secondaryContact = secInput.value.trim();
-  if (hhNameInput) onboardingDraft.householdName = hhNameInput.value.trim();
   if (salaryInput) onboardingDraft.takeHome = salaryInput.value !== "" ? Number(salaryInput.value) : "";
   if (paydaySelect) onboardingDraft.paydayDay = parseInt(paydaySelect.value, 10) || 1;
-  if (otherIncInput) onboardingDraft.otherIncome = otherIncInput.value !== "" ? Number(otherIncInput.value) : "";
+  if (balInput) onboardingDraft.currentBalance = balInput.value !== "" ? Number(balInput.value) : "";
 
   try {
     localStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify(onboardingDraft));
   } catch (e) {}
 }
 
+function validateFastOnboardingQ1(showErr = false) {
+  const salaryInput = document.getElementById("onboarding-salary-input");
+  const val = salaryInput ? Number(salaryInput.value) : 0;
+  if (!val || val <= 0) {
+    if (showErr) {
+      setInlineError("onb-salary-error", "onboarding-salary-input", "Enter your monthly take-home salary greater than ₹0");
+    } else {
+      setInlineError("onb-salary-error", "onboarding-salary-input", "");
+    }
+    return false;
+  }
+  setInlineError("onb-salary-error", "onboarding-salary-input", "");
+  return true;
+}
+
+function validateFastOnboardingQ3(showErr = false) {
+  const balInput = document.getElementById("onboarding-balance-input");
+  const val = balInput ? balInput.value.trim() : "";
+  if (val === "" || isNaN(Number(val)) || Number(val) < 0) {
+    if (showErr) {
+      setInlineError("onb-balance-error", "onboarding-balance-input", "Enter your current available balance (₹0 or greater)");
+    } else {
+      setInlineError("onb-balance-error", "onboarding-balance-input", "");
+    }
+    return false;
+  }
+  setInlineError("onb-balance-error", "onboarding-balance-input", "");
+  return true;
+}
+
 function applyStepDataToState(step, skipped) {
   saveOnboardingDraft();
 
   if (step === 1) {
-    const u = ArthivaState.auth.user;
-    u.name = onboardingDraft.name;
-    if (onboardingDraft.secondaryContact) {
-      if (onboardingDraft.signedInWith === "email") {
-        const d = onboardingDraft.secondaryContact.replace(/\D/g, "");
-        u.mobile = d;
-        u.phone = `+91 ${d}`;
-      } else {
-        u.email = onboardingDraft.secondaryContact;
-      }
-    }
-    if (u.avatarType === "monogram") {
-      u.avatarData = (u.name || "A").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-    }
-  } else if (step === 2) {
-    if (skipped) {
-      ArthivaState.auth.user.householdMode = "Individual";
-      ArthivaState.auth.user.householdName = "";
-      ArthivaState.auth.user.householdMembers = [];
-    } else {
-      // Auto-capture typed member if not yet clicked "+ Add member"
-      const pendingMem = document.getElementById("onb-member-name-input")?.value.trim();
-      if (onboardingDraft.householdMode === "Household" && pendingMem) {
-        addOnboardingHouseholdMember();
-      }
-      ArthivaState.auth.user.householdMode = onboardingDraft.householdMode;
-      ArthivaState.auth.user.householdName = onboardingDraft.householdMode === "Household"
-        ? (onboardingDraft.householdName || `${ArthivaState.auth.user.name || "My"}'s Household`)
-        : "";
-      ArthivaState.auth.user.householdMembers = onboardingDraft.householdMode === "Household"
-        ? JSON.parse(JSON.stringify(onboardingDraft.householdMembers || []))
-        : [];
-    }
-  } else if (step === 3) {
+    // 3 questions answered
     const takeHome = Number(onboardingDraft.takeHome) || 0;
-    const otherInc = Number(onboardingDraft.otherIncome) || 0;
-    ArthivaState.cycleConfig.takeHome = takeHome + otherInc;
-    ArthivaState.cycleConfig.otherIncome = otherInc;
-    ArthivaState.cycleConfig.paydayDay = onboardingDraft.paydayDay || 1;
-    // If the user has not yet set a bank balance in Step 4, initialize Current Available Balance to take-home income so Safe-to-Spend works out-of-the-box
-    if (!ArthivaState.balance.amount || ArthivaState.balance.amount === 0) {
-      ArthivaState.balance.amount = takeHome + otherInc;
-      ArthivaState.balance.label = "From monthly income setup";
-      ArthivaState.balance.lastUpdated = new Date().toISOString();
-    }
-  } else if (step === 4 && !skipped) {
-    // Auto-capture typed bank account if user typed fields and pressed Continue directly
-    const pendingBank = document.getElementById("onb-bank-name-input")?.value.trim();
-    const pendingBal = document.getElementById("onb-bank-balance-input")?.value;
-    if (pendingBank && pendingBal !== "") {
-      addOnboardingBankAccount();
-    }
-    ArthivaState.bankAccounts = JSON.parse(JSON.stringify(onboardingDraft.bankAccounts || []));
-    if (ArthivaState.bankAccounts.length > 0) {
-      const totalBankBal = ArthivaState.bankAccounts.reduce((s, b) => s + (Number(b.balance) || 0), 0);
-      ArthivaState.balance.amount = totalBankBal;
-      ArthivaState.balance.label = `${ArthivaState.bankAccounts[0].bankName} · Just now`;
-      ArthivaState.balance.lastUpdated = new Date().toISOString();
-      ArthivaState.cycleConfig.employerOrBank = `${ArthivaState.bankAccounts[0].bankName} (${ArthivaState.bankAccounts[0].accountType})`;
-    }
-  } else if (step === 5 && !skipped) {
-    const pendingBillName = document.getElementById("onb-bill-name-input")?.value.trim();
-    const pendingBillAmt = Number(document.getElementById("onb-bill-amount-input")?.value || 0);
-    if (pendingBillName && pendingBillAmt > 0) {
-      addOnboardingBillCommitment();
-    }
-    syncOnboardingBillsAndInvestmentsToCommitments();
-  } else if (step === 6 && !skipped) {
-    const pendingInvName = document.getElementById("onb-inv-name-input")?.value.trim();
-    const pendingInvAmt = Number(document.getElementById("onb-inv-amount-input")?.value || 0);
-    if (pendingInvName && pendingInvAmt > 0) {
-      addOnboardingInvestment();
-    }
-    ArthivaState.investments = JSON.parse(JSON.stringify(onboardingDraft.investments || []));
-    syncOnboardingBillsAndInvestmentsToCommitments();
-  } else if (step === 7 && !skipped) {
-    const pendingGoalName = document.getElementById("onboarding-goal-name")?.value.trim();
-    const pendingGoalTarget = Number(document.getElementById("onboarding-goal-target")?.value || 0);
-    if (pendingGoalName && pendingGoalTarget > 0) {
-      addOnboardingGoalItem();
-    }
-    ArthivaState.goals = JSON.parse(JSON.stringify(onboardingDraft.goals || []));
+    const payday = onboardingDraft.paydayDay || 1;
+    const balance = Number(onboardingDraft.currentBalance) || 0;
+
+    ArthivaState.cycleConfig.takeHome = takeHome;
+    ArthivaState.cycleConfig.paydayDay = payday;
+    ArthivaState.balance.amount = balance;
+    ArthivaState.balance.label = "Initial balance · Just now";
+    ArthivaState.balance.lastUpdated = new Date().toISOString();
+  } else if (step === 3) {
+    // App-lock setup
+    const pinVal = (document.getElementById("onb-lock-pin-input")?.value || "").trim();
+    const biometricChecked = document.getElementById("onb-lock-biometric-toggle")?.checked ?? true;
+
+    ArthivaState.security.appLockEnabled = true;
+    ArthivaState.security.preferredMethod = biometricChecked ? "fingerprint" : "pin";
+    ArthivaState.security.pin = pinVal || "1234";
+    ArthivaState.security.isLocked = false;
   }
 
   saveStateToStorage();
 }
 
-function syncOnboardingBillsAndInvestmentsToCommitments() {
-  const merged = [];
-  (onboardingDraft.bills || []).forEach(b => {
-    const dayStr = String(b.dueDay || 5).padStart(2, "0");
-    merged.push({
-      id: b.id,
-      name: b.name,
-      category: b.category || "Rent",
-      amount: Number(b.amount) || 0,
-      dueDate: `2026-10-${dayStr}`,
-      dueDateFormatted: `${b.dueDay || 5} Oct`,
-      method: "UPI / Auto-debit",
-      status: "upcoming",
-      recurrence: b.frequency || "Monthly",
-      notes: "Added during onboarding",
-      paidDate: null
-    });
-  });
-
-  (onboardingDraft.investments || []).forEach(inv => {
-    const dayStr = String(inv.day || 10).padStart(2, "0");
-    merged.push({
-      id: inv.id,
-      name: `${inv.name} (${inv.type})`,
-      category: "Mutual funds and SIPs",
-      amount: Number(inv.amount) || 0,
-      dueDate: `2026-10-${dayStr}`,
-      dueDateFormatted: `${inv.day || 10} Oct`,
-      method: "Auto-debit",
-      status: "upcoming",
-      recurrence: "Monthly",
-      notes: inv.type,
-      paidDate: null
-    });
-  });
-
-  ArthivaState.commitments = merged;
-}
-
-function jumpToOnboardingStep(stepNum) {
-  ArthivaState.onboardingStep = stepNum;
-  localStorage.setItem(ONBOARDING_STEP_KEY, String(stepNum));
-  renderOnboardingStep();
-}
-
-function renderOnboardingFinishSummary() {
-  const card = document.getElementById("onboarding-finish-summary-card");
-  if (!card) return;
-
-  const u = ArthivaState.auth.user || {};
-  const c = ArthivaState.cycleConfig || {};
-  const hhMembers = u.householdMembers || [];
-  const banks = onboardingDraft.bankAccounts || [];
-  const bills = onboardingDraft.bills || [];
-  const invs = onboardingDraft.investments || [];
-  const goals = onboardingDraft.goals || [];
-
-  const rows = [
-    {
-      step: 1,
-      title: "1. Profile",
-      summary: `${u.name || "Not set"}${u.email ? " · " + u.email : ""}${u.mobile ? " · +91 " + u.mobile : ""}`
-    },
-    {
-      step: 2,
-      title: "2. Household",
-      summary: u.householdMode === "Household"
-        ? `${u.householdName || "Household"} (${hhMembers.length} member${hhMembers.length === 1 ? "" : "s"} added)`
-        : "Individual planning"
-    },
-    {
-      step: 3,
-      title: "3. Income & pay cycle",
-      summary: c.takeHome > 0
-        ? `${formatINR(c.takeHome)}/mo · Payday: Day ${c.paydayDay || 1}`
-        : "Skipped"
-    },
-    {
-      step: 4,
-      title: "4. Bank accounts & statements",
-      summary: banks.length > 0
-        ? `${banks.length} account(s) · Balance ${formatINR(ArthivaState.balance.amount)}`
-        : (ArthivaState.expenses.length > 0 ? `${ArthivaState.expenses.length} statement transaction(s) imported` : "Skipped for now")
-    },
-    {
-      step: 5,
-      title: "5. Bills & commitments",
-      summary: bills.length > 0
-        ? `${bills.length} bill(s) totaling ${formatINR(bills.reduce((s, b) => s + Number(b.amount), 0))}`
-        : "Skipped for now"
-    },
-    {
-      step: 6,
-      title: "6. Savings & investments",
-      summary: invs.length > 0
-        ? `${invs.length} investment(s) totaling ${formatINR(invs.reduce((s, i) => s + Number(i.amount), 0))}/mo`
-        : "Skipped for now"
-    },
-    {
-      step: 7,
-      title: "7. Goals",
-      summary: goals.length > 0
-        ? `${goals.length} goal(s): ${goals.map(g => g.title).join(", ")}`
-        : "Skipped for now"
-    }
-  ];
-
-  card.innerHTML = rows.map(r => `
-    <div class="onb-finish-summary-row">
-      <div>
-        <div style="font-weight: 800; color: var(--text-primary);">${escapeHTML(r.title)}</div>
-        <div style="color: var(--text-secondary); font-size: 11.5px; margin-top: 2px;">${escapeHTML(r.summary)}</div>
-      </div>
-      <button type="button" class="section-link" style="font-size: 12px; font-weight: 700; flex-shrink: 0;" onclick="jumpToOnboardingStep(${r.step})">Edit</button>
-    </div>
-  `).join("");
-}
-
 function nextOnboardingStep() {
   const step = ArthivaState.onboardingStep || 1;
-  if (step === 1 && !validateOnboardingStep1Profile(true)) return;
-  if (step === 3 && !validateOnboardingStep3Income(true)) return;
 
-  applyStepDataToState(step, false);
+  if (step === 1) {
+    const q1Ok = validateFastOnboardingQ1(true);
+    const q3Ok = validateFastOnboardingQ3(true);
+    if (!q1Ok || !q3Ok) return;
 
-  if (step < 8) {
-    ArthivaState.onboardingStep = step + 1;
-    localStorage.setItem(ONBOARDING_STEP_KEY, String(ArthivaState.onboardingStep));
+    applyStepDataToState(1, false);
+    ArthivaState.onboardingStep = 2;
+    localStorage.setItem(ONBOARDING_STEP_KEY, "2");
     saveStateToStorage();
     renderOnboardingStep();
-  } else {
+  } else if (step === 2) {
+    // Transition from Rough Estimate to App-Lock setup
+    ArthivaState.onboardingStep = 3;
+    localStorage.setItem(ONBOARDING_STEP_KEY, "3");
+    saveStateToStorage();
+    renderOnboardingStep();
+  } else if (step === 3) {
+    // Validate PIN (must be 4 digits)
+    const pinVal = (document.getElementById("onb-lock-pin-input")?.value || "").trim();
+    if (!pinVal || pinVal.length < 4) {
+      const errEl = document.getElementById("onb-lock-pin-error");
+      if (errEl) {
+        errEl.textContent = "Please enter a 4-digit backup PIN";
+        errEl.style.display = "block";
+      }
+      return;
+    }
+
+    applyStepDataToState(3, false);
     localStorage.removeItem(ONBOARDING_STEP_KEY);
     localStorage.removeItem(ONBOARDING_DRAFT_KEY);
     saveStateToStorage();
     switchScreen("home");
     renderApp();
-    showToast("Onboarding complete! Welcome to your Home dashboard.");
+    showToast("Setup complete! Welcome to your Home dashboard.");
   }
 }
 
 function skipCurrentOnboardingStep() {
-  const step = ArthivaState.onboardingStep || 1;
-  // Steps 2, 4, 5, 6, 7 are optional
-  if (step === 1 || step === 3) return;
-  applyStepDataToState(step, true);
-  if (step < 8) {
-    ArthivaState.onboardingStep = step + 1;
-    localStorage.setItem(ONBOARDING_STEP_KEY, String(ArthivaState.onboardingStep));
-    saveStateToStorage();
-    renderOnboardingStep();
-  }
+  nextOnboardingStep();
 }
 
 function prevOnboardingStep() {
@@ -8091,8 +8418,8 @@ function prevOnboardingStep() {
     localStorage.setItem(ONBOARDING_STEP_KEY, String(ArthivaState.onboardingStep));
     renderOnboardingStep();
   } else {
+    showAuthWelcomeView();
     switchScreen("auth");
-    openStartFinancialOnboardingScreen();
   }
 }
 
@@ -8109,35 +8436,37 @@ function renderOnboardingStep() {
   const stepEl = document.getElementById(`onboarding-step-${step}`);
   if (stepEl) stepEl.style.display = "block";
 
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 1; i <= 3; i++) {
     const dot = document.getElementById(`step-dot-${i}`);
-    if (dot) dot.classList.toggle("active", i <= Math.min(7, step));
+    if (dot) dot.classList.toggle("active", i <= step);
   }
 
   const pillEl = document.getElementById("onboarding-step-pill");
   if (pillEl) {
-    pillEl.textContent = step <= 7 ? `Step ${step} of 7` : "Finish";
-  }
-
-  // Optional steps: 2 (Household), 4 (Bank & statements), 5 (Bills), 6 (Savings & investments), 7 (Goals)
-  const skipBtn = document.getElementById("onboarding-skip-btn");
-  const isOptionalStep = [2, 4, 5, 6, 7].includes(step);
-  if (skipBtn) {
-    skipBtn.style.display = isOptionalStep ? "inline-flex" : "none";
+    pillEl.textContent = `Step ${step} of 3`;
   }
 
   const nextBtn = document.getElementById("onboarding-next-btn");
   if (nextBtn) {
-    nextBtn.textContent = step === 8 ? "Go to Home" : "Continue";
+    if (step === 1) nextBtn.textContent = "Calculate Safe to Spend";
+    else if (step === 2) nextBtn.textContent = "Continue to App Lock";
+    else if (step === 3) nextBtn.textContent = "Finish & Open Dashboard";
   }
 
-  const avatarPrev = document.getElementById("onb-avatar-preview");
-  if (avatarPrev) {
-    renderAvatarIntoElement(avatarPrev, ArthivaState.auth.user);
-  }
+  if (step === 2) {
+    // Populate immediate safe-to-spend calculation
+    const cycleCtx = getPayCycleContext();
+    const daysLeft = cycleCtx.daysLeft || 1;
+    const balance = Number(ArthivaState.balance.amount) || 0;
+    const dailyRate = Math.round(balance / daysLeft);
 
-  if (step === 8) {
-    renderOnboardingFinishSummary();
+    const dailyEl = document.getElementById("onb-est-daily-amt");
+    const totalSafeEl = document.getElementById("onb-est-total-safe");
+    const daysCountEl = document.getElementById("onb-est-days-count");
+
+    if (dailyEl) dailyEl.textContent = formatINR(dailyRate);
+    if (totalSafeEl) totalSafeEl.textContent = formatINR(balance);
+    if (daysCountEl) daysCountEl.textContent = `${daysLeft} days (till ${cycleCtx.endStr})`;
   }
 }
 

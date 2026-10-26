@@ -1,0 +1,2795 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#10B981">
+  <link rel="manifest" href="manifest.json">
+  <title>Arthiva Money — India-First Personal & Household Finance</title>
+  
+  <!-- Google Fonts: Bricolage Grotesque (Display/Hero) + Source Sans 3 (Humanist Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="workbench">
+  <!-- Top Workbench Bar for Reviewers & Pair Programming -->
+  <header id="main-workbench-header" class="workbench-header">
+    <div class="brand-badge">
+      <div class="brand-icon-circle">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3L4 18h4.5l2-4h3l2 4H20L12 3z" fill="rgba(255,255,255,0.2)"/>
+          <path d="M8.5 11h7"/>
+          <path d="M9.5 8h5"/>
+        </svg>
+      </div>
+      <div class="brand-meta">
+        <h1>Arthiva Money</h1>
+        <p>Plan today, a brighter tomorrow · 390×844 Mobile Prototype</p>
+      </div>
+    </div>
+
+    <div class="workbench-controls">
+      <!-- Screen Quick Selector -->
+      <select id="workbench-screen-select" class="screen-quick-select" onchange="switchScreen(this.value)">
+        <option value="home">Screen: Home Dashboard</option>
+        <option value="activity">Screen: Commitments & Bills (Activity)</option>
+        <option value="plan">Screen: Spending Plan</option>
+        <option value="insights">Screen: Visual Insights Dashboard</option>
+        <option value="profile">Screen: Profile, Security & Privacy</option>
+        <option value="subscription">Screen: Upgrade to Pro & Family</option>
+        <option value="faq">Screen: Help & 20 FAQs</option>
+        <option value="onboarding">Flow: Replayable Onboarding (5 Steps)</option>
+        <option value="applock">Security: App-Lock Screen</option>
+        <option value="auth">Screen: Account Login / Sign Up</option>
+      </select>
+
+      <!-- Frame Switcher -->
+      <button class="wb-btn device-mode-btn active" data-mode="ios" onclick="setDeviceFrame('ios')">iOS</button>
+      <button class="wb-btn device-mode-btn" data-mode="android" onclick="setDeviceFrame('android')">Android</button>
+      <button class="wb-btn device-mode-btn" data-mode="borderless" onclick="setDeviceFrame('borderless')">Clean</button>
+
+      <!-- Zoom / Scale -->
+      <button class="wb-btn zoom-btn" data-zoom="0.85" onclick="setDeviceZoom(0.85)">85%</button>
+      <button class="wb-btn zoom-btn active" data-zoom="1.0" onclick="setDeviceZoom(1.0)">100%</button>
+
+      <!-- Empty State Toggle -->
+      <button id="empty-state-toggle-btn" class="wb-btn" onclick="toggleEmptyState()">Sample Data: Rashika</button>
+
+      <!-- 8.1 Dev / QA Only: Reset to New User -->
+      <button id="qa-reset-new-user-btn" class="wb-btn" style="color: #DC2626; border-color: rgba(220, 38, 38, 0.35); font-weight: 700;" onclick="openResetToNewUserModal()" title="Wipe all data and start as a brand-new user">↺ Reset to new user</button>
+
+      <!-- Simulate App Close & Reopen (App Lock) -->
+      <button class="wb-btn" onclick="simulateAppReopenWithSplash()" title="Simulate closing and reopening the app">🔒 Reopen & Lock</button>
+
+      <!-- Push Notification Simulation -->
+      <button class="wb-btn" onclick="triggerPushNotification()">🔔 Test Push</button>
+
+      <!-- Dark Mode Switch -->
+      <button id="theme-toggle-btn" class="wb-btn" onclick="toggleDarkMode()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        Dark Mode
+      </button>
+
+      <!-- Design System Link -->
+      <a href="design-system.html" class="wb-btn" style="text-decoration: none; color: var(--primary); border-color: var(--primary);">
+        🎨 Style Sheet
+      </a>
+
+      <!-- Hide Toolbar Button -->
+      <button class="wb-btn" onclick="toggleWorkbenchToolbar(false)" title="Hide dev toolbar" style="padding: 6px 10px;">✕</button>
+    </div>
+  </header>
+
+  <!-- Floating Floating Workbench Bar Toggle (Visible when header is hidden) -->
+  <button id="workbench-floating-toggle" type="button" class="floating-dev-toggle" onclick="toggleWorkbenchToolbar(true)" title="Show Dev & Workbench Toolbar">
+    <span>🛠️ Dev Tools</span>
+  </button>
+
+  <!-- Prototype Stage (Centers the 390x844 device) -->
+  <main class="workbench-stage">
+    <div id="device-scale-wrapper" class="device-wrapper">
+      
+      <!-- 390×844 Mobile Device Frame -->
+      <div id="mobile-device-frame" class="device-frame">
+        
+        <!-- Splash Screen Overlay -->
+        <div id="app-splash-screen" class="splash-container" style="display: none;">
+          <div class="splash-logo-circle">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3L4 18h4.5l2-4h3l2 4H20L12 3z" fill="rgba(255,255,255,0.25)"/>
+              <path d="M8.5 11h7"/>
+              <path d="M9.5 8h5"/>
+            </svg>
+          </div>
+          <h1 class="splash-title">Arthiva Money</h1>
+          <p class="splash-tagline">Plan today, a brighter tomorrow.</p>
+          <div class="splash-loader"></div>
+          <span style="font-size: 11px; opacity: 0.8;">Verifying secure session...</span>
+        </div>
+
+        <!-- iOS Status Bar & Dynamic Island -->
+        <div class="device-status-bar">
+          <span style="font-size: 13px; font-weight: 700;">9:41</span>
+          
+          <div class="dynamic-island" onclick="triggerPushNotification()" title="Dynamic Island (Tap to test push)">
+            <div class="camera-lens"></div>
+            <div class="sensor-dot"></div>
+          </div>
+
+          <!-- Android Punch Hole (Visible in Android Mode) -->
+          <div class="android-punch-hole"></div>
+
+          <div class="status-right">
+            <svg width="15" height="11" viewBox="0 0 18 12" fill="currentColor">
+              <rect x="0" y="8" width="3" height="4" rx="0.5"/>
+              <rect x="5" y="5" width="3" height="7" rx="0.5"/>
+              <rect x="10" y="2" width="3" height="10" rx="0.5"/>
+              <rect x="15" y="0" width="3" height="12" rx="0.5"/>
+            </svg>
+            <svg width="14" height="11" viewBox="0 0 16 12" fill="currentColor" style="margin: 0 2px;">
+              <path d="M8 2.5C5.2 2.5 2.7 3.6 0.8 5.4L8 12.5L15.2 5.4C13.3 3.6 10.8 2.5 8 2.5Z"/>
+            </svg>
+            <svg width="22" height="11" viewBox="0 0 24 12" fill="currentColor">
+              <rect x="1" y="1" width="19" height="10" rx="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <rect x="3" y="3" width="13" height="6" rx="1.5"/>
+              <path d="M21 4V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Push Notification Banner -->
+        <div id="push-banner" class="push-banner" onclick="openRiskResolutionSheet()" role="button">
+          <div class="push-app-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3L4 18h4.5l2-4h3l2 4H20L12 3z" fill="rgba(255,255,255,0.2)"/>
+              <path d="M8.5 11h7"/>
+              <path d="M9.5 8h5"/>
+            </svg>
+          </div>
+          <div class="push-content">
+            <div class="push-header">
+              <span>ARTHIVA MONEY</span>
+              <span>now</span>
+            </div>
+            <div class="push-title">Safe-to-Spend Pacing Alert</div>
+            <div class="push-body">At this pace you'll be ₹2,400 short for your insurance renewal on 28 Oct. Tap to view adjustment options.</div>
+          </div>
+        </div>
+
+        <!-- App Viewport Container -->
+        <div class="app-viewport">
+          
+          <div class="screen-container">
+            
+            <!-- ==========================================================
+                 SCREEN 0A: WELCOME, AUTHENTICATION, OTP, APP LOCK SETUP & START ONBOARDING (PART A 1–4)
+                 ========================================================== -->
+            <div id="screen-auth" class="app-screen">
+              <div class="auth-container">
+                <div>
+                  <div class="auth-header">
+                    <div class="brand-icon-circle">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3L4 18h4.5l2-4h3l2 4H20L12 3z" fill="rgba(255,255,255,0.2)"/>
+                        <path d="M8.5 11h7"/>
+                        <path d="M9.5 8h5"/>
+                      </svg>
+                    </div>
+                    <h2 style="font-family: var(--font-display); font-size: 24px; font-weight: 800;">Arthiva Money</h2>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Plan today, a brighter tomorrow.</p>
+                  </div>
+
+                  <!-- 1. Welcome Screen -->
+                  <div id="auth-welcome-view" style="text-align: center; padding: 12px 0 8px 0;">
+                    <div class="card" style="margin: 0 0 18px 0; padding: 18px 16px; background: var(--bg-subtle); border: 1px solid var(--border-subtle); text-align: left;">
+                      <div style="font-family: var(--font-display); font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
+                        Know what is safe to spend before payday.
+                      </div>
+                      <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
+                        Arthiva protects your rent, EMIs, SIPs, upcoming bills, and savings goals first—so you always know what you can freely spend today.
+                      </p>
+                      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        <span class="chip-tag paid">✓ India-First (₹)</span>
+                        <span class="chip-tag auto-debit">✓ Payday-to-Payday</span>
+                        <span class="chip-tag">✓ Privacy-First</span>
+                      </div>
+                    </div>
+
+                    <button id="btn-welcome-get-started" type="button" class="btn-primary" style="margin-bottom: 10px;" onclick="openAuthCredentialsView('signup')">
+                      Get started
+                    </button>
+                    <button id="btn-welcome-existing-user" type="button" class="btn-secondary" onclick="openAuthCredentialsView('signin')">
+                      I already have an account
+                    </button>
+                  </div>
+
+                  <!-- 2. Authentication Screen (OVERRIDES earlier step 9.2: Mobile number default + Email tabs) -->
+                  <div id="auth-credentials-view" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <button type="button" class="section-link" style="font-size: 12px; padding: 2px 4px;" onclick="showAuthWelcomeView()">← Back to Welcome</button>
+                      <span id="auth-mode-badge" style="font-size: 11px; font-weight: 700; color: var(--primary);">Sign up</span>
+                    </div>
+
+                    <h3 id="auth-cred-title" style="font-family: var(--font-display); font-size: 18px; font-weight: 800; margin-bottom: 2px;">Create your account</h3>
+                    <p id="auth-cred-subtitle" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Choose Mobile number or Email to receive a 6-digit verification OTP.</p>
+
+                    <!-- Two tabs: "Mobile number" (default) and "Email" -->
+                    <div class="auth-tabs" role="tablist">
+                      <button id="tab-auth-mobile" type="button" class="auth-tab active" onclick="switchAuthChannelTab('mobile')">Mobile number</button>
+                      <button id="tab-auth-email" type="button" class="auth-tab" onclick="switchAuthChannelTab('email')">Email</button>
+                    </div>
+
+                    <!-- 2.1 Mobile Number Tab -->
+                    <div id="auth-channel-mobile-panel">
+                      <div class="form-group">
+                        <label class="form-label" for="auth-mobile-input">MOBILE NUMBER</label>
+                        <div class="country-code-row">
+                          <select id="auth-country-code" class="country-code-select" aria-label="Country code" onchange="validateAuthMobileInput(true)">
+                            <option value="+91" selected>🇮🇳 +91</option>
+                            <option value="+1">🇺🇸 +1</option>
+                            <option value="+44">🇬🇧 +44</option>
+                            <option value="+65">🇸🇬 +65</option>
+                            <option value="+971">🇦🇪 +971</option>
+                          </select>
+                          <input id="auth-mobile-input" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="form-input tabular-nums" placeholder="10-digit mobile number" oninput="onAuthMobileDigitsInput(this)" onblur="validateAuthMobileInput(true)">
+                        </div>
+                        <div id="auth-mobile-error" class="field-error-msg"></div>
+                      </div>
+                    </div>
+
+                    <!-- 2.2 Email Tab -->
+                    <div id="auth-channel-email-panel" style="display: none;">
+                      <div class="form-group">
+                        <label class="form-label" for="auth-email-only-input">EMAIL ADDRESS</label>
+                        <input id="auth-email-only-input" type="email" class="form-input" placeholder="name@example.com" oninput="validateAuthEmailInput(false)" onblur="validateAuthEmailInput(true)">
+                        <div id="auth-email-only-error" class="field-error-msg"></div>
+                      </div>
+                    </div>
+
+                    <button id="btn-auth-continue" type="button" class="btn-primary" style="margin-top: 8px;" disabled onclick="submitAuthContinueToOtp()">
+                      Continue
+                    </button>
+
+                    <!-- Instant Demo Bypass Button (QA helper) -->
+                    <div style="margin-top: 16px; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+                      <div style="font-size: 10.5px; color: var(--text-muted); margin-bottom: 6px; font-weight: 700;">QA SAMPLE ACCOUNT SHORTCUT</div>
+                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="continueAsDemoUser()">
+                        Load Sample Account (Rashika · ₹50,000)
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 2.3 OTP Verification View (Same screen design for mobile and email) -->
+                  <div id="auth-otp-view" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <button id="btn-auth-change-identity" type="button" class="section-link" style="font-size: 12px; padding: 2px 4px;" onclick="changeAuthNumberOrEmail()">← Change number</button>
+                      <span style="font-size: 11px; font-weight: 700; color: var(--primary);">OTP Verification</span>
+                    </div>
+
+                    <h3 id="auth-otp-header-text" style="font-family: var(--font-display); font-size: 17px; font-weight: 800; line-height: 1.35; margin-bottom: 4px;">
+                      Enter the OTP sent to +91 98XXXXXX10
+                    </h3>
+                    <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 10px;">
+                      Enter the 6-digit verification code below (Demo OTP: <strong>123456</strong>).
+                    </p>
+
+                    <!-- 6 individual digit boxes with auto-advance, paste, and WebOTP autocomplete -->
+                    <div class="otp-6box-row" id="otp-boxes-container">
+                      <input id="otp-box-0" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" class="otp-digit-box tabular-nums" aria-label="OTP digit 1" oninput="onOtpBoxInput(0, event)" onkeydown="onOtpBoxKeyDown(0, event)" onpaste="onOtpBoxPaste(event)">
+                      <input id="otp-box-1" type="text" inputmode="numeric" maxlength="1" class="otp-digit-box tabular-nums" aria-label="OTP digit 2" oninput="onOtpBoxInput(1, event)" onkeydown="onOtpBoxKeyDown(1, event)" onpaste="onOtpBoxPaste(event)">
+                      <input id="otp-box-2" type="text" inputmode="numeric" maxlength="1" class="otp-digit-box tabular-nums" aria-label="OTP digit 3" oninput="onOtpBoxInput(2, event)" onkeydown="onOtpBoxKeyDown(2, event)" onpaste="onOtpBoxPaste(event)">
+                      <input id="otp-box-3" type="text" inputmode="numeric" maxlength="1" class="otp-digit-box tabular-nums" aria-label="OTP digit 4" oninput="onOtpBoxInput(3, event)" onkeydown="onOtpBoxKeyDown(3, event)" onpaste="onOtpBoxPaste(event)">
+                      <input id="otp-box-4" type="text" inputmode="numeric" maxlength="1" class="otp-digit-box tabular-nums" aria-label="OTP digit 5" oninput="onOtpBoxInput(4, event)" onkeydown="onOtpBoxKeyDown(4, event)" onpaste="onOtpBoxPaste(event)">
+                      <input id="otp-box-5" type="text" inputmode="numeric" maxlength="1" class="otp-digit-box tabular-nums" aria-label="OTP digit 6" oninput="onOtpBoxInput(5, event)" onkeydown="onOtpBoxKeyDown(5, event)" onpaste="onOtpBoxPaste(event)">
+                    </div>
+
+                    <div id="auth-otp-error" class="field-error-msg" style="margin-bottom: 8px;"></div>
+
+                    <!-- No account found prompt for login mode when no account exists -->
+                    <div id="auth-no-account-prompt" class="card" style="display: none; margin: 10px 0; padding: 12px; background: var(--primary-light); border: 1px solid var(--primary);">
+                      <div style="font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
+                        No account found. Create a new one?
+                      </div>
+                      <button type="button" class="btn-primary" style="height: 36px; font-size: 12.5px;" onclick="continueNoAccountIntoSignup()">
+                        Create new account →
+                      </button>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 14px 0; font-size: 12px;">
+                      <span id="auth-otp-countdown-label" style="color: var(--text-muted); font-weight: 600;">Resend OTP in 30s</span>
+                      <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="btn-auth-resend-otp" type="button" class="section-link" style="font-size: 12px; padding: 2px 6px;" disabled onclick="resendAuthOtp()">Resend OTP</button>
+                        <button type="button" class="section-link" style="font-size: 11px; color: var(--text-muted); padding: 2px 4px;" onclick="expireOtpNowForTest()" title="QA: test expired OTP state">Simulate expiry</button>
+                      </div>
+                    </div>
+
+                    <button id="btn-verify-otp" type="button" class="btn-primary" onclick="verifyAuthOtpCode()">
+                      Verify OTP
+                    </button>
+                  </div>
+
+                  <!-- 3. Secure Your App (Choose 4-digit PIN or Password, no default PIN shown) -->
+                  <div id="auth-setup-lock-view" style="display: none;">
+                    <div style="margin-bottom: 8px;">
+                      <span class="wizard-step-pill">Security Setup</span>
+                    </div>
+                    <h3 style="font-family: var(--font-display); font-size: 20px; font-weight: 800; margin-bottom: 4px;">Secure your app</h3>
+                    <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 14px;">
+                      Choose a 4-digit PIN or a password to protect your financial dashboard whenever you reopen Arthiva.
+                    </p>
+
+                    <div class="split-mode-toggle" style="margin-bottom: 14px;">
+                      <button id="setup-lock-tab-pin" type="button" class="split-toggle-btn active" onclick="switchSetupLockType('pin')">4-digit PIN</button>
+                      <button id="setup-lock-tab-password" type="button" class="split-toggle-btn" onclick="switchSetupLockType('password')">Password</button>
+                    </div>
+
+                    <!-- 4-digit PIN fields -->
+                    <div id="setup-lock-pin-panel">
+                      <div class="form-group">
+                        <label class="form-label" for="setup-pin-input">ENTER 4-DIGIT PIN</label>
+                        <input id="setup-pin-input" type="password" inputmode="numeric" maxlength="4" class="form-input tabular-nums" placeholder="••••" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4); validateSetupAppLockInline(false);">
+                        <div id="setup-pin-error" class="field-error-msg"></div>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="setup-pin-confirm-input">CONFIRM 4-DIGIT PIN</label>
+                        <input id="setup-pin-confirm-input" type="password" inputmode="numeric" maxlength="4" class="form-input tabular-nums" placeholder="••••" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4); validateSetupAppLockInline(false);">
+                        <div id="setup-pin-confirm-error" class="field-error-msg"></div>
+                      </div>
+                    </div>
+
+                    <!-- Password fields (min 8 chars, at least 1 letter & 1 number, show/hide toggle) -->
+                    <div id="setup-lock-password-panel" style="display: none;">
+                      <div class="form-group">
+                        <label class="form-label" for="setup-password-input">CREATE PASSWORD</label>
+                        <div class="password-input-wrap">
+                          <input id="setup-password-input" type="password" class="form-input" placeholder="Min 8 chars, 1 letter & 1 number" oninput="validateSetupAppLockInline(false)">
+                          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('setup-password-input', this)">Show</button>
+                        </div>
+                        <div id="setup-password-error" class="field-error-msg"></div>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="setup-password-confirm-input">CONFIRM PASSWORD</label>
+                        <div class="password-input-wrap">
+                          <input id="setup-password-confirm-input" type="password" class="form-input" placeholder="Re-enter password" oninput="validateSetupAppLockInline(false)">
+                          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('setup-password-confirm-input', this)">Show</button>
+                        </div>
+                        <div id="setup-password-confirm-error" class="field-error-msg"></div>
+                      </div>
+                    </div>
+
+                    <button id="btn-save-app-lock" type="button" class="btn-primary" style="margin-top: 8px;" onclick="submitSetupAppLock()">
+                      Save &amp; Continue
+                    </button>
+                  </div>
+
+                  <!-- 4. "Start Financial Onboarding" Screen -->
+                  <div id="auth-start-onboarding-view" style="display: none;">
+                    <h3 id="start-onb-welcome-heading" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; margin-bottom: 4px;">
+                      Welcome to Arthiva Money
+                    </h3>
+                    <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 12px;">
+                      Let's set up your finances in 7 quick steps. It takes about 5 minutes.
+                    </p>
+
+                    <div class="onb-preview-step-list">
+                      <div class="onb-preview-step-item"><span class="onb-preview-step-num">1</span> <div><strong>Profile</strong> — Full name, contact &amp; avatar</div></div>
+                      <div class="onb-preview-step-item"><span class="onb-preview-step-num">2</span> <div><strong>Household</strong> — Individual or family members <span style="color:var(--text-muted);font-size:11px;">(Optional)</span></div></div>
+                      <div class="onb-preview-step-item"><span class="onb-preview-step-num">3</span> <div><strong>Income &amp; pay cycle</strong> — Take-home salary &amp; payday</div></div>
+                      <div class="onb-preview-step-item"><span class="onb-preview-step-num">4</span> <div><strong>Bank accounts &amp; statements</strong> — Balance or PDF/CSV <span style="color:var(--text-muted);font-size:11px;">(Optional)</span></div></div>
+                      <div class="onb-preview-step-item"><span class="onb-preview-step-num">5</span> <div><strong>Bills &amp; commitments</strong> — Rent, utilities, EMIs <span style="color:var(--text-muted);font-size:11px;">(Optional)</span></div></div>
+                      <div class="onb-preview-step-item"><span class="onb-preview-step-num">6</span> <div><strong>Savings &amp; investments</strong> — SIPs, FDs, PPF/NPS <span style="color:var(--text-muted);font-size:11px;">(Optional)</span></div></div>
+                      <div class="onb-preview-step-item"><span class="onb-preview-step-num">7</span> <div><strong>Goals</strong> — Emergency Medical Buffer &amp; custom goals <span style="color:var(--text-muted);font-size:11px;">(Optional)</span></div></div>
+                    </div>
+
+                    <button id="btn-launch-financial-onboarding" type="button" class="btn-primary" onclick="launchSevenStepOnboarding()">
+                      Start financial onboarding
+                    </button>
+                  </div>
+
+                </div>
+
+                <div class="privacy-shield-note" style="justify-content: center; text-align: center; margin-top: 16px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  <span>Protected by App-Lock. Zero unauthorized data collection.</span>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 0B: SECURE APP-LOCK SCREEN (REQUIREMENT 1.1 - 1.4)
+                 ========================================================== -->
+            <div id="screen-applock" class="app-screen">
+              <div class="applock-container">
+                <div style="width: 100%;">
+                  <div class="brand-icon-circle" style="width: 46px; height: 46px; margin: 0 auto 10px auto;">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FFFFFF" stroke-width="2.3">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                  </div>
+                  <h2 style="font-family: var(--font-display); font-size: 21px; font-weight: 800;">Arthiva Locked</h2>
+                  <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;">Unlock to view your financial dashboard</p>
+
+                  <!-- Active User Pill -->
+                  <div class="applock-user-pill">
+                    <div id="applock-avatar-display" class="header-avatar applock-avatar" style="width: 30px; height: 30px; font-size: 12px;">RP</div>
+                    <div style="text-align: left;">
+                      <div id="applock-user-name" style="font-size: 12.5px; font-weight: 700; color: var(--text-primary); line-height: 1.1;">Rashika</div>
+                      <div id="applock-user-email" style="font-size: 10.5px; color: var(--text-muted);">rashika@arthiva.app</div>
+                    </div>
+                  </div>
+
+                  <!-- Error / Status Notice -->
+                  <div id="applock-error-msg" style="display: none; background: #FEE2E2; color: #B91C1C; font-size: 12px; font-weight: 600; padding: 8px 12px; border-radius: 8px; margin: 8px 0;"></div>
+
+                  <!-- MODE A: 4-Digit PIN Pad -->
+                  <div id="applock-pin-view">
+                    <div style="font-size: 11.5px; font-weight: 700; color: var(--text-secondary); margin-top: 6px;">
+                      ENTER 4-DIGIT APP-LOCK PIN
+                    </div>
+                    <div class="pin-dots-row">
+                      <div id="pin-dot-0" class="pin-dot"></div>
+                      <div id="pin-dot-1" class="pin-dot"></div>
+                      <div id="pin-dot-2" class="pin-dot"></div>
+                      <div id="pin-dot-3" class="pin-dot"></div>
+                    </div>
+
+                    <div class="pin-keypad">
+                      <button type="button" class="pin-key" onclick="pressPinKey('1')">1</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('2')">2</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('3')">3</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('4')">4</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('5')">5</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('6')">6</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('7')">7</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('8')">8</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('9')">9</button>
+                      <button type="button" class="pin-key action-key" onclick="clearPinEntry()">Clear</button>
+                      <button type="button" class="pin-key" onclick="pressPinKey('0')">0</button>
+                      <button type="button" class="pin-key action-key" onclick="backspacePinKey()">⌫</button>
+                    </div>
+                  </div>
+
+                  <!-- MODE B: Password Fallback Unlock -->
+                  <div id="applock-password-view" style="display: none; margin: 18px 0; text-align: left;">
+                    <div class="form-group">
+                      <label class="form-label">ENTER APP-LOCK OR ACCOUNT PASSWORD</label>
+                      <input id="applock-password-input" type="password" class="form-input" placeholder="Enter your password" onkeydown="if(event.key==='Enter') submitAppLockPassword()">
+                    </div>
+                    <button type="button" class="btn-primary" onclick="submitAppLockPassword()">Unlock with Password</button>
+                  </div>
+                </div>
+
+                <!-- Footer Fallback & Sign Out Options -->
+                <div style="width: 100%; border-top: 1px solid var(--border-subtle); padding-top: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                  <button id="applock-toggle-mode-btn" type="button" class="skip-btn" style="color: var(--primary);" onclick="toggleAppLockInputMode()">
+                    Use Password Instead
+                  </button>
+                  <button type="button" class="skip-btn" onclick="handleLogout()">
+                    Sign Out / Switch User
+                  </button>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 1: HOME (HERO SAFE-TO-SPEND & CLEAR OBLIGATIONS)
+                 ========================================================== -->
+            <div id="screen-home" class="app-screen active">
+              
+              <!-- App Top Header -->
+              <div class="app-header">
+                <div class="app-title-area" onclick="switchScreen('profile')">
+                  <div id="header-avatar-display" class="header-avatar">RP</div>
+                  <div class="header-title-text">
+                    <h2>Arthiva Money</h2>
+                    <p id="header-greeting-name">Good morning, Rashika</p>
+                  </div>
+                </div>
+                <div class="header-actions">
+                  <button class="icon-btn" onclick="openBottomSheet('notifications-sheet')" title="Notifications">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span id="header-notif-badge" class="badge-counter" style="display: none;">3</span>
+                  </button>
+                  <button class="icon-btn" onclick="lockApplicationNow()" title="Lock App">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Pay Cycle Banner (Dynamic Dates) -->
+              <div class="pay-cycle-banner">
+                <div class="cycle-pill">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  <span id="pay-cycle-dates-label">Pay Cycle: 1 Oct – 1 Nov</span>
+                </div>
+                <div id="pay-cycle-days-left-badge" class="cycle-days-left">12 days left</div>
+              </div>
+
+              <!-- Hero Safe-to-Spend Card -->
+              <div id="home-hero-card" class="card hero-safe-spend card-tappable" onclick="openBottomSheet('safe-to-spend-breakdown-sheet')">
+                <div class="hero-header">
+                  <div class="hero-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    Safe to Spend Before Payday
+                  </div>
+                  <button type="button" id="hero-view-details-btn" class="trace-pill" title="View safe-to-spend breakdown" aria-label="View safe-to-spend breakdown" onclick="event.stopPropagation(); openBottomSheet('safe-to-spend-breakdown-sheet')">
+                    <span>View details</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                </div>
+
+                <div id="hero-safe-amount" class="hero-amount tabular-nums">₹15,000</div>
+                
+                <div id="hero-pace-text" class="hero-pace tabular-nums">
+                  <span class="pace-highlight">₹1,250/day</span> · 12 days to payday (1 Nov)
+                </div>
+
+                <!-- 5.3 Plain-language Safe-to-Spend equation bar -->
+                <div id="hero-trace-equation-bar" class="hero-trace-equation tabular-nums">
+                  <span class="trace-term">Salary <strong id="hero-trace-salary">₹50,000</strong></span>
+                  <span class="trace-op">−</span>
+                  <span class="trace-term">Bills <strong id="hero-yet-to-pay-val">₹35,500</strong></span>
+                  <span class="trace-op">−</span>
+                  <span class="trace-term">SIPs <strong id="hero-trace-sips">₹3,000</strong></span>
+                  <span class="trace-op">−</span>
+                  <span class="trace-term">Goals <strong id="hero-goal-aside-val">₹5,000</strong></span>
+                  <span class="trace-op">=</span>
+                  <span class="trace-term">Safe to spend <strong id="hero-trace-safe" style="color: var(--primary);">₹15,000</strong></span>
+                </div>
+
+                <!-- Pay Cycle Progress Bar (Dynamic) -->
+                <div class="cycle-progress-wrap">
+                  <div id="cycle-progress-meta-text" class="progress-meta">
+                    <span>Payday: 1 Oct</span>
+                    <span>Day 20 of 31 (65%)</span>
+                    <span>Next: 1 Nov</span>
+                  </div>
+                  <div class="progress-track">
+                    <div id="cycle-progress-fill" class="progress-fill" style="width: 65%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 10.1 Empty State Box for Safe to Spend (When no salary/payday is set) -->
+              <div id="home-empty-state" class="empty-state-box" style="display: none;">
+                <div class="empty-state-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+                <h3>Add your salary and payday to see this</h3>
+                <p>We calculate how much is safe to spend before your next payday after bills, SIPs, and savings goals are protected.</p>
+                <button type="button" class="btn-primary" style="width: auto; padding: 0 20px; margin: 0 auto;" onclick="openIncomeSetupStep()">Set up income</button>
+              </div>
+
+              <!-- Commitment-At-Risk Alert Card (Warm Amber, Never Shaming) -->
+              <div id="home-alert-card" class="alert-card" style="display: none;">
+                <div class="alert-top">
+                  <div class="alert-tag">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    Pacing Attention
+                  </div>
+                  <button class="alert-close" onclick="this.parentElement.parentElement.style.display='none'" title="Dismiss">✕</button>
+                </div>
+                <div class="alert-msg">
+                  At this pace you'll be ₹2,400 short for your insurance renewal on 28 Oct.
+                </div>
+                <div class="alert-action-row">
+                  <span class="alert-link" onclick="openRiskResolutionSheet()">See adjustment options →</span>
+                  <span style="font-size: 11px; opacity: 0.8;">Actionable guidance</span>
+                </div>
+              </div>
+
+              <!-- Balance Check-in Prompt Card (Honest Labeling) -->
+              <div class="card balance-checkin-card">
+                <div class="checkin-left">
+                  <span class="checkin-label">CURRENT AVAILABLE BALANCE</span>
+                  <span id="checkin-balance-val" class="checkin-val tabular-nums">₹32,000</span>
+                  <span class="checkin-stamp">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span id="checkin-balance-stamp">You entered · 2 days ago</span>
+                  </span>
+                </div>
+                <button class="checkin-btn" onclick="openBalanceCheckinSheet()">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  Check in
+                </button>
+              </div>
+
+              <!-- 2.3 Upcoming Bills: Show only the "Pay (Before 1 Nov)" group -->
+              <div class="section-header">
+                <span class="section-title">Upcoming Bills · <span id="home-yet-to-pay-label" style="color: var(--state-risk);">Pay (Before 1 Nov)</span></span>
+                <button type="button" class="section-link" onclick="switchScreen('activity')">All bills →</button>
+              </div>
+              <div class="card" style="padding: 6px 12px; margin-bottom: 14px;">
+                <div id="home-bills-list" class="bill-list">
+                  <!-- Injected dynamically via app.js -->
+                </div>
+              </div>
+
+              <!-- 2.4 & 2.5 Savings Goals Section (No Contribute button on Home; all goals rendered in uniform cards) -->
+              <div class="section-header">
+                <span class="section-title">Savings Goals</span>
+                <div class="section-header-actions">
+                  <button type="button" class="section-link" onclick="openCreateGoalModal()">+ Add a Goal</button>
+                </div>
+              </div>
+              <div id="home-goals-container">
+                <div id="home-goal-widget" class="card goal-widget">
+                  <div class="goal-top">
+                    <div class="goal-info">
+                      <h4 id="goal-title-display">Goa trip with friends</h4>
+                      <p>Target: <span id="goal-target-text" class="tabular-nums">₹40,000</span> · <span id="goal-remaining-text" class="tabular-nums">₹25,000 left</span></p>
+                    </div>
+                    <div id="goal-percent-text" class="goal-ring-badge">38%</div>
+                  </div>
+                  <div class="goal-progress-bar">
+                    <div id="goal-bar-fill" class="goal-progress-fill" style="width: 38%;"></div>
+                  </div>
+                  <div class="goal-foot" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span>Saved: <strong id="goal-saved-text" class="tabular-nums">₹15,000</strong> · Cycle Plan: <strong id="goal-cycle-alloc" class="tabular-nums">₹5,000</strong></span>
+                    <button type="button" class="section-link" onclick="openGoalDetailModal('goal-1')">Details</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 2: COMMITMENTS & BILLS (REQUIREMENT 2.1, 2.2 & 10.1)
+                 ========================================================== -->
+            <div id="screen-activity" class="app-screen">
+              <div class="app-header">
+                <div class="app-title-area">
+                  <div class="header-title-text">
+                    <h2>Commitments & Bills</h2>
+                    <p id="activity-cycle-subtitle">Current Pay Cycle Obligations</p>
+                  </div>
+                </div>
+                <button class="icon-btn" onclick="openAddCommitmentSheet()" title="Add Bill">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+              </div>
+
+              <!-- 10.1 Empty State for Commitments & Bills Screen -->
+              <div id="activity-empty-state" class="section-empty-state" style="display: none; margin-top: 12px;">
+                <div class="section-empty-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <div class="section-empty-title">Add your rent, EMIs and bills to never miss a due date</div>
+                <div class="section-empty-desc">Ring-fence upcoming bills, EMIs, and SIP mandates before your next payday.</div>
+                <button type="button" class="btn-primary" style="width: auto; padding: 0 18px; height: 38px; font-size: 12.5px;" onclick="openAddCommitmentSheet()">Add commitment</button>
+              </div>
+
+              <div id="activity-filled-content">
+                <!-- Cycle Obligation Summary Strip -->
+                <div class="pay-cycle-banner">
+                  <div class="cycle-pill">
+                    <span>Yet to Pay: <strong id="commitments-total-before-payday">₹12,000</strong></span>
+                  </div>
+                  <span id="commitments-count-before-payday" style="font-size: 11px; font-weight: 700; color: var(--text-secondary);">3 bills remaining</span>
+                </div>
+
+                <!-- Group A: Yet to Pay (Due Before Next Payday) -->
+                <div class="section-header" style="margin-top: 6px;">
+                  <span id="commitments-yet-to-pay-heading" class="section-title">Yet to Pay (Before 1 Nov)</span>
+                  <span style="font-size: 11px; font-weight: 700; color: var(--state-risk);">Current Cycle</span>
+                </div>
+                <div class="card" style="padding: 6px 12px; margin-bottom: 14px;">
+                  <div id="commitments-before-payday" class="bill-list">
+                    <!-- Injected via app.js -->
+                  </div>
+                </div>
+
+                <!-- Group B: Paid (Completed This Cycle) -->
+                <div class="section-header">
+                  <span class="section-title">Paid (Completed This Cycle)</span>
+                  <span id="commitments-total-paid-badge" style="font-size: 11px; font-weight: 700; color: var(--state-safe);">₹26,500 Paid</span>
+                </div>
+                <div class="card" style="padding: 6px 12px; margin-bottom: 14px;">
+                  <div id="commitments-paid-cycle" class="bill-list">
+                    <!-- Injected via app.js -->
+                  </div>
+                </div>
+
+                <!-- Group C: Upcoming Commitments for the Next Cycle -->
+                <div class="section-header">
+                  <span class="section-title">Upcoming Commitments (Next Cycle)</span>
+                  <span id="commitments-total-next-badge" style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Scheduled</span>
+                </div>
+                <div class="card" style="padding: 6px 12px; margin-bottom: 24px;">
+                  <div id="commitments-after-payday" class="bill-list">
+                    <!-- Injected via app.js -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 3: SPENDING PLAN (REQUIREMENT 3 - SIMPLIFIED HEADER)
+                 ========================================================== -->
+            <div id="screen-plan" class="app-screen">
+              <div class="app-header">
+                <div class="app-title-area">
+                  <div class="header-title-text">
+                    <h2>Spending Plan</h2>
+                    <p>Pay cycle budget allocation & category controls</p>
+                  </div>
+                </div>
+                <!-- Requirement 3: Removed duplicate top-right Plus (+) and Edit buttons -->
+              </div>
+
+              <!-- Allocation Macro Bar -->
+              <div class="card" style="padding: 16px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                  <span><strong id="plan-macro-commitments">₹38,500</strong> Commitments</span>
+                  <span><strong id="plan-macro-goal">₹5,000</strong> Goal</span>
+                  <span><strong id="plan-macro-flexible">₹6,500</strong> Flexible</span>
+                </div>
+                <div style="height: 10px; border-radius: 6px; overflow: hidden; display: flex; background: var(--bg-subtle);">
+                  <div id="macro-bar-commitments" style="width: 77%; background: var(--primary);" title="Fixed Commitments"></div>
+                  <div id="macro-bar-goal" style="width: 10%; background: var(--accent-gold);" title="Savings Goal"></div>
+                  <div id="macro-bar-flexible" style="width: 13%; background: var(--pink-accent);" title="Flexible Spending"></div>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 8px; line-height: 1.4;">
+                  Tap any category below to inspect underlying recorded transactions or adjust its monthly budget limit.
+                </div>
+              </div>
+
+              <div class="section-header" style="align-items: center;">
+                <span class="section-title">Flexible spending categories</span>
+                <div class="section-header-actions" style="margin-left: auto;">
+                  <button type="button" class="section-link" onclick="openAddCategoryModal('flexible')">+ Add category</button>
+                  <button type="button" class="section-link" onclick="openQuickAddExpenseSheet()">+ Quick log</button>
+                </div>
+              </div>
+
+              <!-- Recent Expenses Live Feed on Plan Screen -->
+              <div id="plan-recent-expenses-section" style="padding: 0 16px 14px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Recent Expenses</span>
+                  <span id="plan-expenses-count-badge" class="status-pill within" style="font-size: 10px; padding: 2px 8px;">0 logged</span>
+                </div>
+                <div id="plan-recent-expenses-list">
+                  <!-- Populated dynamically via app.js -->
+                </div>
+              </div>
+
+              <!-- 10.1 Empty State Banner for Flexible Spending (When no transactions logged yet) -->
+              <div id="plan-empty-state" class="section-empty-state" style="display: none;">
+                <div class="section-empty-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line></svg>
+                </div>
+                <div class="section-empty-title">Log your first expense</div>
+                <div class="section-empty-desc">Track groceries, dining out, transport, or split a purchase across two categories.</div>
+                <button type="button" class="btn-primary" style="width: auto; padding: 0 18px; height: 38px; font-size: 12.5px;" onclick="openQuickAddExpenseSheet()">Quick log</button>
+              </div>
+
+              <!-- Expandable Budgets List -->
+              <div style="padding: 0 16px 24px 16px;">
+                <div id="budgets-category-list">
+                  <!-- Injected via app.js -->
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 4: VISUAL, DATA-DRIVEN INSIGHTS DASHBOARD (REQ 4, 5 & 10.1)
+                 ========================================================== -->
+            <div id="screen-insights" class="app-screen">
+              <div class="app-header">
+                <div class="app-title-area">
+                  <div class="header-title-text">
+                    <h2>Financial Insights</h2>
+                    <p>Unified pay-cycle analytics & recap</p>
+                  </div>
+                </div>
+                <button id="ins-header-pdf-btn" class="btn-secondary" style="width: auto; height: 36px; padding: 0 12px; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="exportDataPDF(this)" title="Download PDF Pay Cycle Recap">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Export PDF</span>
+                </button>
+              </div>
+
+              <!-- 1. DUMMY EMPTY STATE (When user has no data yet: shows friendly illustration and locked preview until data arrives) -->
+              <div id="insights-empty-state" class="section-empty-state" style="display: none; margin: 16px 16px 20px 16px; padding: 32px 20px;">
+                <div class="section-empty-icon" style="width: 52px; height: 52px; background: var(--lavender-light); color: var(--primary);">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                    <path d="M4 4l3 3 5-5 5 5 3-3" stroke="var(--primary)" stroke-width="2"></path>
+                  </svg>
+                </div>
+                <div class="section-empty-title" style="font-size: 17px; margin-top: 4px;">Your insights will appear here</div>
+                <div class="section-empty-desc" style="max-width: 320px; font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5;">
+                  Add your first entry and we'll start showing trends, patterns and highlights as your data grows.
+                </div>
+                <button type="button" class="btn-primary" style="margin-top: 14px; min-width: 170px;" onclick="switchScreen('home')">
+                  Add your first entry
+                </button>
+                <button type="button" class="section-link" style="font-size: 12.5px; margin-top: 6px; color: var(--primary);" onclick="previewSampleInsights()">
+                  See what insights look like
+                </button>
+
+                <!-- Greyed-out skeleton preview cards showing what will be unlocked -->
+                <div style="width: 100%; margin-top: 24px; display: flex; flex-direction: column; gap: 10px; opacity: 0.55;">
+                  <div style="border: 1px dashed var(--border-strong); border-radius: 12px; padding: 12px 14px; background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 14px;">🔒</span>
+                      <div style="text-align: left;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Weekly & Monthly Trend</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Unlocks after first logged expenses</div>
+                      </div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 2px 8px; border-radius: 6px; background: var(--bg-surface);">Locked</span>
+                  </div>
+
+                  <div style="border: 1px dashed var(--border-strong); border-radius: 12px; padding: 12px 14px; background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 14px;">🔒</span>
+                      <div style="text-align: left;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Top Spending Categories</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Unlocks with category breakdowns</div>
+                      </div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 2px 8px; border-radius: 6px; background: var(--bg-surface);">Locked</span>
+                  </div>
+
+                  <div style="border: 1px dashed var(--border-strong); border-radius: 12px; padding: 12px 14px; background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 14px;">🔒</span>
+                      <div style="text-align: left;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Savings & Pacing Highlights</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Unlocks personalized auto-observations</div>
+                      </div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 2px 8px; border-radius: 6px; background: var(--bg-surface);">Locked</span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="insights-populated-container">
+                <!-- Reporting Period / Pay-Cycle Selector -->
+                <div class="insights-period-bar">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary);">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span>Reporting Period:</span>
+                  </div>
+                  <select id="insights-period-select" class="period-select" onchange="onInsightsPeriodChange(this.value)">
+                    <option value="current" selected>Current Cycle (Oct – Nov 2026)</option>
+                    <option value="previous">Previous Cycle (Sep – Oct 2026)</option>
+                  </select>
+                </div>
+
+                <!-- 4.1 Financial Summary Cards (6 Key Metrics) -->
+                <div class="insight-stat-grid-6">
+                  <div class="insight-stat-card">
+                    <h5>Total Income</h5>
+                    <div id="ins-income-val" class="stat-value tabular-nums">₹50,000</div>
+                    <span id="ins-income-sub" style="font-size: 10.5px; color: var(--primary);">Recorded take-home</span>
+                  </div>
+                  <div class="insight-stat-card">
+                    <h5>Total Expenditure</h5>
+                    <div id="ins-expenditure-val" class="stat-value tabular-nums">₹40,900</div>
+                    <span id="ins-expenditure-sub" style="font-size: 10.5px; color: var(--text-secondary);">Paid bills + Flexible spend</span>
+                  </div>
+                  <div class="insight-stat-card">
+                    <h5>Remaining Available</h5>
+                    <div id="ins-remaining-val" class="stat-value tabular-nums">₹15,000</div>
+                    <span id="ins-remaining-sub" style="font-size: 10.5px; color: var(--state-safe);">Safe to spend before payday</span>
+                  </div>
+                  <div class="insight-stat-card">
+                    <h5>Savings & Rate</h5>
+                    <div id="ins-savings-val" class="stat-value tabular-nums">₹5,000 (10%)</div>
+                    <span id="ins-savings-sub" style="font-size: 10.5px; color: var(--text-muted);">Planned vs actual saved</span>
+                  </div>
+                  <div class="insight-stat-card">
+                    <h5>Planned Commitments</h5>
+                    <div id="ins-commitments-val" class="stat-value tabular-nums">₹38,500</div>
+                    <span id="ins-commitments-sub" style="font-size: 10.5px; color: var(--text-secondary);">₹26,500 paid · ₹12,000 due</span>
+                  </div>
+                  <div class="insight-stat-card">
+                    <h5>Budget Utilization</h5>
+                    <div id="ins-budget-util-val" class="stat-value tabular-nums">76%</div>
+                    <span id="ins-budget-util-sub" style="font-size: 10.5px; color: var(--primary);">₹14,400 of ₹19,000 plan</span>
+                  </div>
+                </div>
+
+                <!-- 4.2 Chart 1: Outflow vs Income (Simple Horizontal Bar Comparison) -->
+                <div class="insight-card-box">
+                  <div id="ins-chart1-finding" class="insight-finding-title">82% of your take-home pay is allocated before 1 Nov</div>
+                  <div class="insight-headline-row">
+                    <div id="ins-chart1-headline" class="insight-headline-num tabular-nums">₹40,900 spent</div>
+                    <span id="ins-spent-pct-badge" class="insight-headline-delta good">−2% vs last cycle</span>
+                  </div>
+                  <div id="ins-income-exp-chart">
+                    <!-- Dynamically rendered via app.js -->
+                  </div>
+                  <div class="insight-more-footer">
+                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('outflow')">More insights →</button>
+                  </div>
+                </div>
+
+                <!-- 4.3 Chart 2: Category Spending Comparison (Simple Horizontal Bars — No Pie/Doughnut) -->
+                <div class="insight-card-box">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                    <div id="ins-chart2-finding" class="insight-finding-title" style="flex: 1;">You spent 41% more on dining out & food delivery than last cycle</div>
+                    <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                      <button id="ins-cat-mode-flex" type="button" class="wb-btn active" style="padding: 2px 8px; font-size: 10.5px;" onclick="setInsightsCategoryMode('flexible')">Flexible</button>
+                      <button id="ins-cat-mode-all" type="button" class="wb-btn" style="padding: 2px 8px; font-size: 10.5px;" onclick="setInsightsCategoryMode('all')">All</button>
+                    </div>
+                  </div>
+                  <div class="insight-headline-row">
+                    <div id="ins-chart2-headline" class="insight-headline-num tabular-nums">₹5,800 on Dining</div>
+                    <span id="ins-chart2-delta" class="insight-headline-delta bad">+₹1,700 (+41%) vs last cycle</span>
+                  </div>
+                  <div id="ins-category-breakdown-container">
+                    <!-- Dynamically rendered clean horizontal bar comparison via app.js -->
+                  </div>
+                  <div id="ins-category-drilldown" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle);"></div>
+                  <div class="insight-more-footer">
+                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('categories')">More insights →</button>
+                  </div>
+                </div>
+
+                <!-- 4.4 Chart 3: Planned Budget vs. Actual Spending (Progress Bars for Limits) -->
+                <div class="insight-card-box">
+                  <div id="ins-chart3-finding" class="insight-finding-title">4 of 5 flexible categories are within budget; Dining is ₹800 over</div>
+                  <div class="insight-headline-row">
+                    <div id="ins-chart3-headline" class="insight-headline-num tabular-nums">₹14,400 of ₹19K</div>
+                    <span id="ins-chart3-delta" class="insight-headline-delta good">₹4,600 budget buffer left</span>
+                  </div>
+                  <div id="ins-budget-vs-actual-list">
+                    <!-- Dynamically rendered via app.js -->
+                  </div>
+                  <div class="insight-more-footer">
+                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('budgets')">More insights →</button>
+                  </div>
+                </div>
+
+                <!-- 4.5 Chart 4: Savings Goals Progress (Progress Bars for Goals) -->
+                <div class="insight-card-box">
+                  <div id="ins-chart4-finding" class="insight-finding-title">You have funded 57% of your total ₹1L savings goals</div>
+                  <div class="insight-headline-row">
+                    <div id="ins-chart4-headline" class="insight-headline-num tabular-nums">₹57,000 saved</div>
+                    <span id="ins-chart4-delta" class="insight-headline-delta good">+₹8,000 planned this cycle</span>
+                  </div>
+                  <div id="ins-goals-progress-list">
+                    <!-- Dynamically rendered via app.js -->
+                  </div>
+                  <div class="insight-more-footer">
+                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('goals')">More insights →</button>
+                  </div>
+                </div>
+
+                <!-- 4.6 Chart 5: Spending Trend Over Time (Clean SVG Line Chart) -->
+                <div class="insight-card-box">
+                  <div id="ins-chart5-finding" class="insight-finding-title">Flexible spending is 2% higher than your 4-cycle average</div>
+                  <div class="insight-headline-row">
+                    <div id="ins-chart5-headline" class="insight-headline-num tabular-nums">₹14,400 this cycle</div>
+                    <span id="ins-chart5-delta" class="insight-headline-delta bad">+₹150 (+1%) vs last cycle</span>
+                  </div>
+                  <div id="ins-spending-trends-list">
+                    <!-- Dynamically rendered SVG Line Chart + axis labels via app.js -->
+                  </div>
+                  <div class="insight-more-footer">
+                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('trends')">More insights →</button>
+                  </div>
+                </div>
+
+                <!-- 4.7 Personalized Financial Recommendations (Hidden when insufficient data per 10.1) -->
+                <div id="ins-recommendations-section">
+                  <div class="section-header">
+                    <span class="section-title">Personalized Recommendations</span>
+                  </div>
+                  <div id="ins-recommendations-list" class="recommendations-grid">
+                    <!-- Dynamically rendered via app.js -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 5: PROFILE, SECURITY, PRIVACY & DATA CONTROL
+                 ========================================================== -->
+            <div id="screen-profile" class="app-screen">
+              <div class="app-header">
+                <div class="app-title-area">
+                  <div class="header-title-text">
+                    <h2>Profile & Settings</h2>
+                    <p>Account, Security & Privacy Controls</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5.1 & 5.2 OVERRIDES: User Profile Card with Pencil Edit Icon & Avatar Hover/Tap Overlay -->
+              <div class="card" style="padding: 16px; margin-bottom: 14px;">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <button type="button" class="profile-avatar-wrapper" onclick="openAvatarPickerModal()" aria-label="Edit profile picture" title="Edit profile picture">
+                      <div id="profile-avatar-display" class="header-avatar">RP</div>
+                      <span class="avatar-edit-overlay" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                        <span>Edit</span>
+                      </span>
+                    </button>
+                    <div>
+                      <h3 id="profile-user-name" style="font-family: var(--font-display); font-size: 18px; font-weight: 700;">Rashika</h3>
+                      <p id="profile-user-meta" style="font-size: 12px; color: var(--text-secondary);">Product Analyst · Bengaluru · Age 27</p>
+                      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 3px;">
+                        <span id="profile-membership-tier-badge" style="font-size: 10.5px; font-weight: 600; color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 4px; display: inline-block;">Arthiva Basic Member</span>
+                        <span id="profile-household-badge" style="font-size: 10.5px; font-weight: 600; color: var(--text-secondary); background: var(--bg-subtle); padding: 2px 8px; border-radius: 4px; display: inline-block;">Rashika's Household</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" class="goal-edit-icon-btn" aria-label="Edit profile" title="Edit profile" onclick="openEditProfileModal()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-subtle); font-size: 11.5px; color: var(--text-secondary);">
+                  <span id="profile-email-display">✉️ rashika@arthiva.app</span>
+                  <span id="profile-mobile-display">📱 +91 98450 12345</span>
+                </div>
+              </div>
+
+              <!-- 8. Arthiva Pro & Family Subscription Card -->
+              <div class="pro-card">
+                <h3>Arthiva Pro & Arthiva Family</h3>
+                <p>Compare Free, Pro individual analytics, and Family shared household management.</p>
+                <div class="pro-pricing">
+                  <span class="pro-price-tag">₹149<span style="font-size: 13px; font-weight: 600;">/mo</span></span>
+                  <span style="font-size: 12px; color: rgba(255,255,255,0.85);">or Family at ₹249/mo</span>
+                  <span class="pro-save-pill">Compare Plans</span>
+                </div>
+                <button class="btn-pro" onclick="switchScreen('subscription')">Upgrade to Pro & Compare Plans</button>
+              </div>
+
+              <!-- 1.3 Security & Authentication Section -->
+              <div class="section-header">
+                <span class="section-title">Security & Authentication</span>
+                <span class="section-link" onclick="openSecuritySettingsModal()">Configure →</span>
+              </div>
+              <div class="card" style="padding: 12px 16px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+                  <div>
+                    <div style="font-size: 13px; font-weight: 700;">App-Lock on Re-entry</div>
+                    <div id="profile-security-summary" style="font-size: 11px; color: var(--text-secondary);">Preferred: 4-Digit PIN · Fallback: Password</div>
+                  </div>
+                  <span class="status-pill within">Active</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-subtle);">
+                  <div>
+                    <div style="font-size: 12.5px; font-weight: 600;">Biometric / Fingerprint Unlock</div>
+                    <div id="profile-bio-status-sub" style="font-size: 11px; color: var(--text-muted);">Device platform authenticator</div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input id="profile-toggle-fingerprint" type="checkbox" onchange="toggleBiometricSetting('fingerprint', this.checked)">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                  <div>
+                    <div style="font-size: 12.5px; font-weight: 600;">Face Recognition Unlock</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Supported device Face ID API</div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input id="profile-toggle-face" type="checkbox" onchange="toggleBiometricSetting('face', this.checked)">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                  <button class="btn-secondary" style="flex: 1; height: 36px; font-size: 12px;" onclick="openSecuritySettingsModal()">Change PIN / Password</button>
+                </div>
+              </div>
+
+              <!-- Payday and Income Settings -->
+              <div class="section-header">
+                <span class="section-title">Pay Cycle Setup</span>
+                <span class="section-link" onclick="startOnboardingFlow()">Setup Wizard →</span>
+              </div>
+              <div class="card" style="padding: 12px 16px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-subtle);">
+                  <div>
+                    <div style="font-size: 13.5px; font-weight: 600;">Monthly Take-home Pay</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">After PF and tax</div>
+                  </div>
+                  <div id="profile-takehome-val" class="tabular-nums" style="font-weight: 700; color: var(--primary);">₹50,000</div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                  <div>
+                    <div style="font-size: 13.5px; font-weight: 600;">Payday Anchor</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Cycle starts this date</div>
+                  </div>
+                  <div id="profile-payday-val" style="font-weight: 700; color: var(--primary);">1st of every month</div>
+                </div>
+              </div>
+
+              <!-- 10 & 11. Privacy & Consent-Based Automatic Expense Tracking -->
+              <div class="section-header">
+                <span class="section-title">Privacy & Automatic Expense Tracking</span>
+              </div>
+              <div class="card" style="padding: 14px 16px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle);">
+                  <div>
+                    <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary);">Enable Automatic Expense Tracking</div>
+                    <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px;">
+                      Identify eligible transactions from authorized sources to reduce manual entry. Off by default until explicit verification & consent.
+                    </p>
+                  </div>
+                  <label class="toggle-switch">
+                    <input id="master-auto-track-toggle" type="checkbox" onchange="onMasterAutoTrackToggle(this.checked)">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <!-- Individual Data Source Controls -->
+                <div id="auto-track-sources-list" style="margin-top: 12px;">
+                  <!-- Dynamically rendered via app.js -->
+                </div>
+
+                <!-- 3.1 & 3.2 Import Statement Option (Unprotected PDF, CSV, Excel + Helper Line with FAQ Deep-Link) -->
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <div>
+                      <div style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Bank or Credit Card Statement</div>
+                      <div style="font-size: 11px; color: var(--text-muted);">Accepted formats: Unprotected PDF, CSV, XLS, XLSX</div>
+                    </div>
+                    <button type="button" class="btn-secondary" style="width: auto; height: 36px; padding: 0 14px; font-size: 12px;" onclick="openImportStatementModal()">
+                      Import statement
+                    </button>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
+                    Upload an unprotected PDF, CSV or Excel statement. <button type="button" class="section-link" style="font-size: 11px; padding: 0 2px; text-decoration: underline;" onclick="openUnprotectPdfFaq()">How to unprotect your bank statement PDF</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6. Frequently Asked Questions (FAQ) Link Card -->
+              <div class="section-header">
+                <span class="section-title">Help & Support</span>
+              </div>
+              <div class="card card-tappable" style="padding: 14px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;" onclick="switchScreen('faq')">
+                <div>
+                  <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary);">Frequently Asked Questions (21 FAQs)</div>
+                  <div style="font-size: 11.5px; color: var(--text-secondary);">Step-by-step guides on Safe to Spend, Statement PDFs, Goals & Privacy</div>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+
+              <!-- 3.1 Export Financial Data Section: Strictly Two Text-Only Buttons ("Export PDF" & "Export CSV") -->
+              <div class="section-header">
+                <span class="section-title">Export Financial Data</span>
+              </div>
+              <div class="card" style="padding: 14px 16px; margin-bottom: 14px;">
+                <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 10px;">
+                  Download your complete account report in branded PDF or UTF-8 CSV format.
+                </p>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" id="btn-export-pdf" class="btn-primary" style="flex: 1; font-size: 12.5px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="exportDataPDF(this)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Export PDF</span>
+                  </button>
+                  <button type="button" id="btn-export-csv" class="btn-secondary" style="flex: 1; font-size: 12.5px;" onclick="exportDataCSV()">Export CSV</button>
+                </div>
+                <div id="export-empty-hint" style="display: none; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                  Nothing to export yet
+                </div>
+              </div>
+
+              <!-- 11.3 Sign Out, Account Deletion & Dev/QA Reset to New User (8.1) -->
+              <div class="card" style="padding: 14px 16px; margin-bottom: 24px;">
+                <button type="button" class="btn-secondary" style="font-size: 13px; font-weight: 700; margin-bottom: 12px;" onclick="handleLogout()">
+                  Sign Out of Account
+                </button>
+
+                <details style="font-size: 11.5px; color: var(--text-muted);">
+                  <summary style="cursor: pointer; font-weight: 600; padding: 4px 0;">Account Management & Permanent Deletion</summary>
+                  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
+                    <p style="margin-bottom: 8px; line-height: 1.4;">Permanently delete your account and erase all financial data stored on this device. Requires PIN/password verification.</p>
+                    <button type="button" class="btn-secondary" style="color: #DC2626; border-color: rgba(220, 38, 38, 0.25); font-size: 12px; height: 36px;" onclick="openDeleteAccountModal()">
+                      Delete Account & Wipe Data
+                    </button>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 7: SUBSCRIPTION COMPARISON (REQUIREMENT 8)
+                 ========================================================== -->
+            <div id="screen-subscription" class="app-screen">
+              <div class="app-header">
+                <div class="app-title-area">
+                  <button class="icon-btn" onclick="switchScreen('profile')" style="margin-right: 4px;">←</button>
+                  <div class="header-title-text">
+                    <h2>Arthiva Plans</h2>
+                    <p>Individual & Household Financial Clarity</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="padding: 0 16px 24px 16px;">
+                <!-- Billing Cycle Toggle -->
+                <div class="split-mode-toggle" style="margin-bottom: 14px;">
+                  <button id="sub-cycle-monthly" type="button" class="split-toggle-btn active" onclick="setSubscriptionBillingCycle('monthly')">Monthly Billing</button>
+                  <button id="sub-cycle-annual" type="button" class="split-toggle-btn" onclick="setSubscriptionBillingCycle('annual')">Annual (Save 44%)</button>
+                </div>
+
+                <!-- Tier 1: Arthiva Basic (Free) -->
+                <div class="sub-tier-card">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <div>
+                      <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800;">Arthiva Basic</h3>
+                      <span style="font-size: 11.5px; color: var(--text-secondary);">For solo salaried young professionals</span>
+                    </div>
+                    <div style="font-family: var(--font-display); font-size: 20px; font-weight: 800;">Free</div>
+                  </div>
+                  <ul class="sub-feature-list">
+                    <li><span>✓</span> <span>Payday-to-payday Safe to Spend calculation</span></li>
+                    <li><span>✓</span> <span>Unlimited manual bills, commitments & Quick Log</span></li>
+                    <li><span>✓</span> <span>Custom spending categories & split expense logging</span></li>
+                    <li><span>✓</span> <span>Visual Insights dashboard, CSV & PDF Recap export</span></li>
+                    <li><span>✓</span> <span>PIN, password & device biometric App-Lock</span></li>
+                  </ul>
+                  <button id="btn-select-basic" class="btn-secondary" style="height: 40px; font-size: 12.5px;" onclick="selectSubscriptionTier('Arthiva Basic')">Current Active Plan</button>
+                </div>
+
+                <!-- Tier 2: Arthiva Pro -->
+                <div class="sub-tier-card featured">
+                  <span class="sub-badge-top">Most Popular</span>
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <div>
+                      <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--primary);">Arthiva Pro</h3>
+                      <span style="font-size: 11.5px; color: var(--text-secondary);">Advanced automation & multi-cycle forecasting</span>
+                    </div>
+                    <div style="text-align: right;">
+                      <div id="pro-tier-price-text" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--primary);">₹149<span style="font-size: 12px; font-weight: 600;">/mo</span></div>
+                      <div id="pro-tier-sub-text" style="font-size: 10px; color: var(--text-muted);">or ₹999/year</div>
+                    </div>
+                  </div>
+                  <ul class="sub-feature-list">
+                    <li><span>★</span> <span><strong>Everything in Basic</strong>, plus:</span></li>
+                    <li><span>✓</span> <span>Multi-goal wealth & emergency fund projections</span></li>
+                    <li><span>✓</span> <span>Automated bank statement & merchant receipt parsing</span></li>
+                    <li><span>✓</span> <span>12-month historical pay-cycle trend comparisons</span></li>
+                    <li><span>✓</span> <span>Smart grace-period & cash-flow shortfall simulator</span></li>
+                  </ul>
+                  <button id="btn-select-pro" class="btn-primary" style="height: 40px; font-size: 12.5px;" onclick="selectSubscriptionTier('Arthiva Pro')">Select Arthiva Pro (Preview)</button>
+                </div>
+
+                <!-- Tier 3: Arthiva Family -->
+                <div class="sub-tier-card">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <div>
+                      <h3 style="font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--pink-accent);">Arthiva Family</h3>
+                      <span style="font-size: 11.5px; color: var(--text-secondary);">For couples, flatmates & shared Indian households</span>
+                    </div>
+                    <div style="text-align: right;">
+                      <div id="family-tier-price-text" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--pink-accent);">₹249<span style="font-size: 12px; font-weight: 600;">/mo</span></div>
+                      <div id="family-tier-sub-text" style="font-size: 10px; color: var(--text-muted);">or ₹1,799/year · Up to 4 members</div>
+                    </div>
+                  </div>
+                  <ul class="sub-feature-list">
+                    <li><span>★</span> <span><strong>Everything in Pro</strong>, plus household features:</span></li>
+                    <li><span>✓</span> <span>Shared household bills (Rent, Cook, BESCOM, Wi-Fi)</span></li>
+                    <li><span>✓</span> <span>Joint family savings goals (Home downpayment, Travel)</span></li>
+                    <li><span>✓</span> <span>Privacy-first: Shared bill pool while keeping personal Safe to Spend private</span></li>
+                    <li><span>✓</span> <span>Combined household pay-cycle calendar & reminders</span></li>
+                  </ul>
+                  <button id="btn-select-family" class="btn-secondary" style="height: 40px; font-size: 12.5px; border-color: var(--pink-accent); color: var(--pink-accent);" onclick="selectSubscriptionTier('Arthiva Family')">Select Arthiva Family (Preview)</button>
+                </div>
+
+                <!-- Comparison Table: Individual vs Household -->
+                <div class="card" style="margin: 14px 0 0 0; padding: 14px;">
+                  <h4 style="font-family: var(--font-display); font-size: 14px; margin-bottom: 8px;">Plan Feature Comparison</h4>
+                  <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                    <thead>
+                      <tr style="border-bottom: 1px solid var(--border-subtle); text-align: left; color: var(--text-muted);">
+                        <th style="padding: 6px 4px;">Feature</th>
+                        <th style="padding: 6px 4px; text-align: center;">Basic</th>
+                        <th style="padding: 6px 4px; text-align: center;">Pro</th>
+                        <th style="padding: 6px 4px; text-align: center;">Family</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 6px 4px;">Safe-to-Spend Engine</td>
+                        <td style="text-align: center;">✓</td>
+                        <td style="text-align: center;">✓</td>
+                        <td style="text-align: center;">✓</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 6px 4px;">CSV & PDF Recap Export</td>
+                        <td style="text-align: center;">✓</td>
+                        <td style="text-align: center;">✓</td>
+                        <td style="text-align: center;">✓</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 6px 4px;">Auto-Tracking & Statement Parse</td>
+                        <td style="text-align: center;">Manual/Feed</td>
+                        <td style="text-align: center;">✓</td>
+                        <td style="text-align: center;">✓</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid var(--border-subtle);">
+                        <td style="padding: 6px 4px;">Shared Household Bills & Split</td>
+                        <td style="text-align: center;">—</td>
+                        <td style="text-align: center;">—</td>
+                        <td style="text-align: center;">Up to 4</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 4px;">Joint Household Goals</td>
+                        <td style="text-align: center;">—</td>
+                        <td style="text-align: center;">—</td>
+                        <td style="text-align: center;">✓</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px; line-height: 1.4;">
+                    <strong>Note:</strong> Selecting a plan updates your prototype membership tier for testing. Live recurring payment gateway billing is not charged in prototype mode.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 8: FREQUENTLY ASKED QUESTIONS (REQUIREMENT 6 - 20 FAQS)
+                 ========================================================== -->
+            <div id="screen-faq" class="app-screen">
+              <div class="app-header">
+                <div class="app-title-area">
+                  <button type="button" class="icon-btn" onclick="switchScreen('profile')" style="margin-right: 4px;" aria-label="Back to Profile">←</button>
+                  <div class="header-title-text">
+                    <h2>Help & FAQs</h2>
+                    <p>Guides on Arthiva Features, Statement PDFs & Privacy</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="padding: 0 16px 24px 16px;">
+                <div class="form-group" style="margin-bottom: 12px;">
+                  <input id="faq-search-input" type="text" class="form-input" placeholder="Search questions (e.g. unprotect PDF, PIN, Safe to Spend)..." oninput="renderFAQList(this.value)">
+                </div>
+                <div id="faq-accordion-list" class="faq-list-card">
+                  <!-- 20 FAQs injected via app.js -->
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ==========================================================
+                 SCREEN 6: FINANCIAL ONBOARDING — STEPS 1 TO 7 + FINISH (PART A SECTION 5 OVERRIDE)
+                 ========================================================== -->
+            <div id="screen-onboarding" class="app-screen">
+              <div class="onboarding-screen">
+                
+                <div>
+                  <div class="onboarding-step-indicator">
+                    <span id="onboarding-step-pill" class="wizard-step-pill">Step 1 of 7</span>
+                    <div class="step-dots" style="flex: 1; margin: 0 12px;">
+                      <div id="step-dot-1" class="step-dot active"></div>
+                      <div id="step-dot-2" class="step-dot"></div>
+                      <div id="step-dot-3" class="step-dot"></div>
+                      <div id="step-dot-4" class="step-dot"></div>
+                      <div id="step-dot-5" class="step-dot"></div>
+                      <div id="step-dot-6" class="step-dot"></div>
+                      <div id="step-dot-7" class="step-dot"></div>
+                    </div>
+                    <button id="onboarding-skip-btn" type="button" class="skip-btn" style="display: none;" onclick="skipCurrentOnboardingStep()">Skip for now</button>
+                  </div>
+
+                  <!-- Step 1 of 7 — Profile (Full name required, email or mobile whichever wasn't used to sign in optional, avatar preset or upload) -->
+                  <div id="onboarding-step-1" class="onboarding-step-content">
+                    <h2 class="onboarding-hero-title">Profile</h2>
+                    <p class="onboarding-subtitle">Tell us your full name, optional contact info, and choose a profile avatar.</p>
+
+                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+                      <div id="onb-avatar-preview" class="profile-avatar-lg" style="width: 56px; height: 56px; font-size: 20px; cursor: pointer;" onclick="openAvatarPickerModal()">A</div>
+                      <div>
+                        <button type="button" class="btn-secondary" style="width: auto; height: 36px; padding: 0 14px; font-size: 12px;" onclick="openAvatarPickerModal()">Choose or upload avatar</button>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Preset avatars or upload JPG / PNG / WEBP</div>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label" for="onb-profile-name-input">FULL NAME <span style="color: var(--primary);">*</span></label>
+                      <input id="onb-profile-name-input" type="text" class="form-input" placeholder="e.g. Rashika Sharma" oninput="validateOnboardingStep1Profile(false); saveOnboardingDraft();">
+                      <div id="onb-profile-name-error" class="field-error-msg"></div>
+                    </div>
+
+                    <div id="onb-secondary-contact-group" class="form-group">
+                      <label id="onb-secondary-contact-label" class="form-label" for="onb-secondary-contact-input">EMAIL ADDRESS (OPTIONAL)</label>
+                      <input id="onb-secondary-contact-input" type="text" class="form-input" placeholder="name@example.com" oninput="validateOnboardingStep1Profile(false); saveOnboardingDraft();">
+                      <div id="onb-secondary-contact-error" class="field-error-msg"></div>
+                    </div>
+                  </div>
+
+                  <!-- Step 2 of 7 — Household (Individual or household; if household add members: name, relation, earning yes/no. Optional) -->
+                  <div id="onboarding-step-2" class="onboarding-step-content" style="display: none;">
+                    <h2 class="onboarding-hero-title">Household</h2>
+                    <p class="onboarding-subtitle">Are you managing finances as an individual or together with a household?</p>
+
+                    <div class="split-mode-toggle" style="margin-bottom: 14px;">
+                      <button id="onb-mode-individual" type="button" class="split-toggle-btn active" onclick="setOnboardingHouseholdMode('Individual')">Individual</button>
+                      <button id="onb-mode-household" type="button" class="split-toggle-btn" onclick="setOnboardingHouseholdMode('Household')">Household</button>
+                    </div>
+
+                    <div id="onb-household-fields" style="display: none;">
+                      <div class="form-group">
+                        <label class="form-label" for="onb-household-name-input">HOUSEHOLD NAME (OPTIONAL)</label>
+                        <input id="onb-household-name-input" type="text" class="form-input" placeholder="e.g. Sharma Household" oninput="saveOnboardingDraft()">
+                      </div>
+
+                      <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
+                        <div style="font-size: 11.5px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; text-transform: uppercase;">Add Household Member</div>
+                        <div class="form-group" style="margin-bottom: 8px;">
+                          <label class="form-label" for="onb-member-name-input">MEMBER NAME</label>
+                          <input id="onb-member-name-input" type="text" class="form-input" placeholder="e.g. Rohan Sharma" oninput="clearOnbInlineError('onb-member-error')">
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label class="form-label" for="onb-member-relation-select">RELATION</label>
+                            <select id="onb-member-relation-select" class="form-input">
+                              <option value="Spouse / Partner">Spouse / Partner</option>
+                              <option value="Parent">Parent</option>
+                              <option value="Sibling">Sibling</option>
+                              <option value="Child">Child</option>
+                              <option value="Flatmate">Flatmate</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label class="form-label" for="onb-member-earning-select">EARNING?</label>
+                            <select id="onb-member-earning-select" class="form-input">
+                              <option value="Yes">Yes (Earning)</option>
+                              <option value="No">No (Dependent)</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div id="onb-member-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
+                        <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingHouseholdMember()">+ Add member</button>
+                      </div>
+
+                      <div id="onb-household-members-list"></div>
+                    </div>
+                  </div>
+
+                  <!-- Step 3 of 7 — Income & pay cycle (Monthly take-home salary required > ₹0, payday date 1–31, other regular income optional) -->
+                  <div id="onboarding-step-3" class="onboarding-step-content" style="display: none;">
+                    <h2 class="onboarding-hero-title">Income &amp; pay cycle</h2>
+                    <p class="onboarding-subtitle">
+                      Enter your monthly take-home salary and payday date to power <strong>Safe to spend before payday</strong>.
+                    </p>
+                    
+                    <div class="form-group">
+                      <label class="form-label" for="onboarding-salary-input">MONTHLY TAKE-HOME SALARY (₹) <span style="color: var(--primary);">*</span></label>
+                      <input id="onboarding-salary-input" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 50000" style="font-size: 18px; font-weight: 700;" oninput="validateOnboardingStep3Income(false); saveOnboardingDraft();">
+                      <div id="onb-salary-error" class="field-error-msg"></div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label" for="onboarding-payday-select">PAYDAY DATE (1–31)</label>
+                      <select id="onboarding-payday-select" class="form-input" style="font-weight: 700;" onchange="saveOnboardingDraft()">
+                        <option value="1">1st of every month</option>
+                        <option value="2">2nd of every month</option>
+                        <option value="3">3rd of every month</option>
+                        <option value="4">4th of every month</option>
+                        <option value="5">5th of every month</option>
+                        <option value="6">6th of every month</option>
+                        <option value="7">7th of every month</option>
+                        <option value="8">8th of every month</option>
+                        <option value="9">9th of every month</option>
+                        <option value="10">10th of every month</option>
+                        <option value="11">11th of every month</option>
+                        <option value="12">12th of every month</option>
+                        <option value="13">13th of every month</option>
+                        <option value="14">14th of every month</option>
+                        <option value="15">15th of every month</option>
+                        <option value="16">16th of every month</option>
+                        <option value="17">17th of every month</option>
+                        <option value="18">18th of every month</option>
+                        <option value="19">19th of every month</option>
+                        <option value="20">20th of every month</option>
+                        <option value="21">21st of every month</option>
+                        <option value="22">22nd of every month</option>
+                        <option value="23">23rd of every month</option>
+                        <option value="24">24th of every month</option>
+                        <option value="25">25th of every month</option>
+                        <option value="26">26th of every month</option>
+                        <option value="27">27th of every month</option>
+                        <option value="28">28th of every month</option>
+                        <option value="29">29th of every month</option>
+                        <option value="30">30th of every month</option>
+                        <option value="31">31st (Last day of month)</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label" for="onboarding-other-income-input">OTHER REGULAR MONTHLY INCOME (₹, OPTIONAL)</label>
+                      <input id="onboarding-other-income-input" type="number" min="0" class="form-input tabular-nums" placeholder="e.g. 10000 (Rental / Freelance)" oninput="saveOnboardingDraft()">
+                    </div>
+                  </div>
+
+                  <!-- Step 4 of 7 — Bank accounts & statements (Add bank accounts: bank name, account type, current balance and/or Upload Statement. Optional) -->
+                  <div id="onboarding-step-4" class="onboarding-step-content" style="display: none;">
+                    <h2 class="onboarding-hero-title">Bank accounts &amp; statements</h2>
+                    <p class="onboarding-subtitle">Add your primary bank account balance or upload an unprotected bank statement.</p>
+
+                    <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
+                      <div style="font-size: 11.5px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; text-transform: uppercase;">Add Bank Account</div>
+                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div class="form-group" style="flex: 1.2; margin-bottom: 0;">
+                          <label class="form-label" for="onb-bank-name-input">BANK NAME</label>
+                          <input id="onb-bank-name-input" type="text" class="form-input" placeholder="e.g. HDFC Bank" oninput="clearOnbInlineError('onb-bank-error')">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onb-bank-type-select">ACCOUNT TYPE</label>
+                          <select id="onb-bank-type-select" class="form-input">
+                            <option value="Salary / Savings">Salary / Savings</option>
+                            <option value="Savings">Savings</option>
+                            <option value="Current">Current</option>
+                            <option value="NRO / NRE">NRO / NRE</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group" style="margin-bottom: 8px;">
+                        <label class="form-label" for="onb-bank-balance-input">CURRENT BALANCE (₹)</label>
+                        <input id="onb-bank-balance-input" type="number" min="0" class="form-input tabular-nums" placeholder="e.g. 32000" oninput="clearOnbInlineError('onb-bank-error')">
+                      </div>
+                      <div id="onb-bank-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
+                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingBankAccount()">+ Add bank account</button>
+                    </div>
+
+                    <div id="onb-bank-accounts-list" style="margin-bottom: 12px;"></div>
+
+                    <!-- Upload Statement block with helper and FAQ link -->
+                    <div class="card" style="margin: 0; padding: 12px; border: 1px dashed var(--border-strong);">
+                      <div style="font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Have a bank statement?</div>
+                      <button type="button" class="btn-secondary" style="height: 38px; font-size: 12.5px;" onclick="openImportStatementModal()">
+                        Upload Statement
+                      </button>
+                      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
+                        Upload an unprotected PDF, CSV or Excel statement.
+                        <button type="button" class="section-link" style="font-size: 11px; padding: 0; text-decoration: underline;" onclick="openUnprotectPdfFaq()">How to unprotect your bank statement PDF</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Step 5 of 7 — Bills & commitments (Add rent, utilities, EMIs, insurance premiums, school fees, staff salaries: name, amount, due date, frequency. Optional) -->
+                  <div id="onboarding-step-5" class="onboarding-step-content" style="display: none;">
+                    <h2 class="onboarding-hero-title">Bills &amp; commitments</h2>
+                    <p class="onboarding-subtitle">Add your recurring bills (rent, utilities, EMIs, insurance, school fees, staff salaries) so Arthiva ring-fences them before payday.</p>
+
+                    <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
+                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div class="form-group" style="flex: 1.3; margin-bottom: 0;">
+                          <label class="form-label" for="onb-bill-name-input">BILL / COMMITMENT NAME</label>
+                          <input id="onb-bill-name-input" type="text" class="form-input" placeholder="e.g. House Rent / Phone EMI" oninput="clearOnbInlineError('onb-bill-error')">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onb-bill-category-select">TYPE</label>
+                          <select id="onb-bill-category-select" class="form-input">
+                            <option value="Rent">Rent</option>
+                            <option value="Electricity and utilities">Utilities</option>
+                            <option value="EMIs and loans">EMIs &amp; Loans</option>
+                            <option value="Insurance">Insurance Premium</option>
+                            <option value="School and education">School Fees</option>
+                            <option value="Cook and household help">Staff Salaries</option>
+                            <option value="Netflix and subscriptions">Subscriptions</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onb-bill-amount-input">AMOUNT (₹)</label>
+                          <input id="onb-bill-amount-input" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 15000" oninput="clearOnbInlineError('onb-bill-error')">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onb-bill-due-input">DUE DAY (1–31)</label>
+                          <input id="onb-bill-due-input" type="number" min="1" max="31" value="5" class="form-input tabular-nums">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onb-bill-freq-select">FREQUENCY</label>
+                          <select id="onb-bill-freq-select" class="form-input">
+                            <option value="Monthly">Monthly</option>
+                            <option value="Quarterly">Quarterly</option>
+                            <option value="Annual">Annual</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div id="onb-bill-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
+                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingBillCommitment()">+ Add bill or commitment</button>
+                    </div>
+
+                    <div id="onb-bills-list"></div>
+                  </div>
+
+                  <!-- Step 6 of 7 — Savings & investments (Add SIPs: fund name, amount, date; FDs, PPF/EPF/NPS, gold. Optional) -->
+                  <div id="onboarding-step-6" class="onboarding-step-content" style="display: none;">
+                    <h2 class="onboarding-hero-title">Savings &amp; investments</h2>
+                    <p class="onboarding-subtitle">Add your recurring SIPs, FDs, PPF/EPF/NPS, or gold investments.</p>
+
+                    <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
+                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onb-inv-type-select">INSTRUMENT TYPE</label>
+                          <select id="onb-inv-type-select" class="form-input">
+                            <option value="SIP (Mutual Fund)">SIP (Mutual Fund)</option>
+                            <option value="Fixed Deposit (FD)">Fixed Deposit (FD)</option>
+                            <option value="PPF / EPF / NPS">PPF / EPF / NPS</option>
+                            <option value="Gold / SGB">Gold / SGB</option>
+                          </select>
+                        </div>
+                        <div class="form-group" style="flex: 1.3; margin-bottom: 0;">
+                          <label class="form-label" for="onb-inv-name-input">FUND / INVESTMENT NAME</label>
+                          <input id="onb-inv-name-input" type="text" class="form-input" placeholder="e.g. Nifty 50 Index SIP" oninput="clearOnbInlineError('onb-inv-error')">
+                        </div>
+                      </div>
+
+                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onb-inv-amount-input">AMOUNT (₹)</label>
+                          <input id="onb-inv-amount-input" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 5000" oninput="clearOnbInlineError('onb-inv-error')">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onb-inv-day-input">DEBIT / SIP DAY (1–31)</label>
+                          <input id="onb-inv-day-input" type="number" min="1" max="31" value="10" class="form-input tabular-nums">
+                        </div>
+                      </div>
+                      <div id="onb-inv-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
+                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingInvestment()">+ Add investment / SIP</button>
+                    </div>
+
+                    <div id="onb-investments-list"></div>
+                  </div>
+
+                  <!-- Step 7 of 7 — Goals (Suggest "Emergency Medical Buffer" first, plus custom goals: name, target amount, target date, monthly contribution. Optional) -->
+                  <div id="onboarding-step-7" class="onboarding-step-content" style="display: none;">
+                    <h2 class="onboarding-hero-title">Goals</h2>
+                    <p class="onboarding-subtitle">Start with our recommended <strong>Emergency Medical Buffer</strong> first, or add custom savings goals.</p>
+
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
+                      <button type="button" class="chip-pill selected" onclick="fillOnboardingGoalSuggestion('Emergency Medical Buffer', 60000, '2027-06-30', 5000)">
+                        ★ Suggested: Emergency Medical Buffer (₹60,000)
+                      </button>
+                      <button type="button" class="chip-pill" onclick="fillOnboardingGoalSuggestion('Goa trip with friends', 40000, '2027-03-31', 5000)">
+                        Goa trip (₹40,000)
+                      </button>
+                    </div>
+
+                    <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
+                      <div class="form-group" style="margin-bottom: 8px;">
+                        <label class="form-label" for="onboarding-goal-name">GOAL NAME</label>
+                        <input id="onboarding-goal-name" type="text" class="form-input" placeholder="e.g. Emergency Medical Buffer" oninput="clearOnbInlineError('onb-goal-error')">
+                      </div>
+
+                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onboarding-goal-target">TARGET AMOUNT (₹)</label>
+                          <input id="onboarding-goal-target" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 60000" oninput="clearOnbInlineError('onb-goal-error')">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                          <label class="form-label" for="onboarding-goal-monthly">MONTHLY CONTRIBUTION (₹)</label>
+                          <input id="onboarding-goal-monthly" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 5000" oninput="clearOnbInlineError('onb-goal-error')">
+                        </div>
+                      </div>
+
+                      <div class="form-group" style="margin-bottom: 8px;">
+                        <label class="form-label" for="onboarding-goal-target-date">TARGET DATE</label>
+                        <input id="onboarding-goal-target-date" type="date" class="form-input" value="2027-06-30">
+                      </div>
+                      <div id="onb-goal-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
+                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingGoalItem()">+ Add goal to list</button>
+                    </div>
+
+                    <div id="onb-goals-list"></div>
+                  </div>
+
+                  <!-- Finish Screen: "You're all set!" with summary of each step + "Edit" link next to each, then "Go to Home" -->
+                  <div id="onboarding-step-8" class="onboarding-step-content" style="display: none;">
+                    <div class="brand-icon-circle" style="width: 52px; height: 52px; margin: 0 auto 12px auto;">
+                      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#FFFFFF" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <h2 class="onboarding-hero-title" style="text-align: center;">You're all set!</h2>
+                    <p class="onboarding-subtitle" style="text-align: center; margin-bottom: 12px;">
+                      Review what you added across your 7 setup steps below. Tap <strong>Edit</strong> next to any section to make changes.
+                    </p>
+                    <div id="onboarding-finish-summary-card" class="card" style="margin: 0 0 14px 0; padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border-subtle);">
+                      <!-- Populated dynamically via renderOnboardingFinishSummary() -->
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Onboarding Footer Actions -->
+                <div style="display: flex; gap: 12px; margin-top: 16px;">
+                  <button id="onboarding-back-btn" type="button" class="btn-secondary" style="flex: 1;" onclick="prevOnboardingStep()">Back</button>
+                  <button id="onboarding-next-btn" type="button" class="btn-primary" style="flex: 2;" onclick="nextOnboardingStep()">Continue</button>
+                </div>
+
+              </div>
+            </div>
+
+          </div><!-- /.screen-container -->
+
+          <!-- ==========================================================
+               BOTTOM NAVIGATION BAR (HIDDEN WHEN LOCKED OR LOGGED OUT)
+               ========================================================== -->
+          <nav id="main-bottom-nav" class="bottom-nav">
+            <button class="nav-item active" data-screen="home" onclick="switchScreen('home')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              <span>Home</span>
+            </button>
+
+            <button class="nav-item" data-screen="activity" onclick="switchScreen('activity')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span>Bills</span>
+            </button>
+
+            <!-- Floating Action Button with Speed Dial -->
+            <div class="nav-fab-wrapper">
+              <button class="nav-fab" onclick="toggleFabMenu()" title="Quick Actions">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
+
+            <button class="nav-item" data-screen="plan" onclick="switchScreen('plan')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+              <span>Plan</span>
+            </button>
+
+            <button class="nav-item" data-screen="insights" onclick="switchScreen('insights')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <span>Insights</span>
+            </button>
+
+            <button class="nav-item" data-screen="profile" onclick="switchScreen('profile')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span>Profile</span>
+            </button>
+          </nav>
+
+          <!-- Floating Radial / Speed Dial Menu -->
+          <div id="fab-quick-menu" class="fab-quick-menu">
+            <div class="quick-menu-item" onclick="openBalanceCheckinSheet()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              <span>Check in balance directly</span>
+            </div>
+            <div class="quick-menu-item" onclick="openQuickAddExpenseSheet()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line></svg>
+              <span>Quick log expense</span>
+            </div>
+            <div class="quick-menu-item" onclick="openAddCommitmentSheet()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span>Add bill / commitment</span>
+            </div>
+            <div class="quick-menu-item" onclick="openCreateGoalModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+              <span>Create new savings goal</span>
+            </div>
+          </div>
+
+          <!-- Toast Pill -->
+          <div id="app-toast" class="toast-notice"></div>
+
+        </div><!-- /.app-viewport -->
+
+        <!-- Bottom Sheet Overlay -->
+        <div id="global-sheet-overlay" class="sheet-overlay" onclick="closeAllSheets()"></div>
+
+        <!-- ==========================================================
+             BOTTOM SHEET: NOTIFICATIONS CENTER
+             ========================================================== -->
+        <div id="notifications-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3>Notifications & Alerts</h3>
+              <p>Actionable financial updates</p>
+            </div>
+            <button class="icon-btn" onclick="closeBottomSheet('notifications-sheet')">✕</button>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+            <button class="skip-btn" onclick="markAllNotificationsRead()">Mark all as read</button>
+          </div>
+
+          <div id="notifications-items-list" class="notifications-list">
+            <!-- Injected via app.js -->
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 1: SAFE TO SPEND BREAKDOWN (ITEM 7 OVERRIDE)
+             ========================================================== -->
+        <div id="safe-to-spend-breakdown-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3>Safe to spend breakdown</h3>
+              <p>How your safe-to-spend figure is calculated</p>
+            </div>
+            <button type="button" class="icon-btn" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet')" aria-label="Close">✕</button>
+          </div>
+
+          <div class="breakdown-lines-card">
+            <div class="breakdown-line-item">
+              <span class="bl-label">Salary</span>
+              <span id="eq-val-salary" class="bl-amount tabular-nums">₹50,000</span>
+            </div>
+            <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); openBalanceCheckinSheet();">
+              <span class="bl-label">Current balance</span>
+              <span id="eq-val-balance" class="bl-amount tabular-nums">₹32,000</span>
+            </div>
+            <!-- Spent This Cycle (Option A: Explicit deduction from Opening/Current Balance) -->
+            <div id="breakdown-spent-cycle-row" class="breakdown-line-item" style="cursor: pointer;" onclick="toggleBreakdownSpentDetails()">
+              <div>
+                <span class="bl-label">Spent this cycle</span>
+                <span id="eq-val-spent-sub" style="display: block; font-size: 10.5px; color: var(--text-muted);">No expenses logged yet</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="eq-val-spent" class="bl-amount deduction tabular-nums">₹0</span>
+                <span id="eq-spent-expand-icon" style="font-size: 10px; color: var(--text-muted); transition: transform 0.2s;">▼</span>
+              </div>
+            </div>
+            <!-- Collapsible individual entries list -->
+            <div id="breakdown-spent-details-list" style="display: none; background: var(--bg-subtle); border-radius: 8px; padding: 8px 10px; margin: 4px 0 8px 0; max-height: 160px; overflow-y: auto; font-size: 11.5px;">
+              <!-- Injected dynamically via app.js -->
+            </div>
+            <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); switchScreen('activity');">
+              <span class="bl-label">Bills</span>
+              <span id="eq-val-bills" class="bl-amount deduction tabular-nums">−₹12,000</span>
+            </div>
+            <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); switchScreen('activity');">
+              <span class="bl-label">SIPs</span>
+              <span id="eq-val-sips" class="bl-amount deduction tabular-nums">₹0</span>
+            </div>
+            <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); openRecordGoalSheet();">
+              <span class="bl-label">Goals</span>
+              <span id="eq-val-savings" class="bl-amount deduction tabular-nums">−₹5,000</span>
+            </div>
+
+            <hr class="breakdown-divider">
+
+            <div class="breakdown-total-row">
+              <div>
+                <div class="bt-label">Safe to spend</div>
+                <div id="eq-val-total-sub" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">₹1,250/day for 12 days to 1 Nov</div>
+              </div>
+              <div id="eq-val-total" class="bt-amount tabular-nums">₹15,000</div>
+            </div>
+          </div>
+
+          <!-- Dynamic Plain-Language Narrative Explanation -->
+          <div id="safe-to-spend-narrative-box" style="margin: 12px 0; padding: 12px 14px; background: var(--lavender-light); border: 1px solid var(--lavender-border); border-radius: 12px; font-size: 12.5px; line-height: 1.5; color: var(--text-primary);">
+            <!-- Dynamically injected via app.js based on user data -->
+          </div>
+
+          <div class="trust-note">
+            <strong>Honest calculation:</strong> This estimate is based directly on what you've entered. We never guess hidden bank charges or read private messages without consent.
+          </div>
+
+          <button type="button" class="btn-primary" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); openBalanceCheckinSheet();">
+            Update My Balance Now
+          </button>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 2: DIRECT BALANCE EDITING & HISTORY
+             ========================================================== -->
+        <div id="balance-checkin-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3>Update Current Balance</h3>
+              <p>Direct entry with monthly audit history</p>
+            </div>
+            <button class="icon-btn" onclick="closeBottomSheet('balance-checkin-sheet')">✕</button>
+          </div>
+
+          <div class="balance-direct-box">
+            <label class="form-label">CURRENT AVAILABLE BALANCE (₹)</label>
+            <input id="balance-direct-number-input" type="number" class="balance-input-field tabular-nums" oninput="onBalanceInputChange()" placeholder="32000">
+
+            <div class="balance-delta-row">
+              <span>Change vs previous:</span>
+              <span id="balance-delta-badge" class="balance-delta-badge zero">No change</span>
+            </div>
+            <div id="balance-sim-safe-text" style="font-size: 12px; color: var(--primary); margin-top: 6px; font-weight: 600;">
+              Safe to spend: ₹15,000 (₹1,250/day)
+            </div>
+          </div>
+
+          <!-- Reason & Notes -->
+          <div class="form-group">
+            <label class="form-label">REASON FOR ADJUSTMENT</label>
+            <select id="balance-adjustment-reason" class="form-input">
+              <option value="Salary received">Salary received</option>
+              <option value="Expense or purchase">Expense or purchase</option>
+              <option value="Bill payment">Bill payment</option>
+              <option value="Savings or investment transfer">Savings or investment transfer</option>
+              <option value="Money received">Money received</option>
+              <option value="Refund received">Refund received</option>
+              <option value="Cash withdrawal or deposit">Cash withdrawal or deposit</option>
+              <option value="Correction to previous balance" selected>Correction to previous balance</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">OPTIONAL NOTE</label>
+            <input id="balance-adjustment-custom-note" type="text" class="form-input" placeholder="e.g. Travel reimbursement / ATM cash">
+          </div>
+
+          <button class="btn-primary" style="margin-bottom: 16px;" onclick="saveDirectBalance()">
+            Save & Update Safe to Spend
+          </button>
+
+          <!-- Balance Adjustment History Log -->
+          <div class="balance-history-section">
+            <div class="section-title" style="font-size: 13px;">Monthly Balance Adjustment History</div>
+            <div id="balance-history-list-items" class="balance-history-list">
+              <!-- Injected via app.js -->
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 3: COMMITMENT ACTION SHEET
+             ========================================================== -->
+        <div id="commitment-action-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3 id="action-sheet-bill-title">Health Insurance Renewal</h3>
+              <p id="action-sheet-bill-due">Due 28 Oct · Annual</p>
+            </div>
+            <button class="icon-btn" onclick="closeBottomSheet('commitment-action-sheet')">✕</button>
+          </div>
+
+          <div class="card" style="margin: 0 0 16px 0; background: var(--bg-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <span style="font-size: 12px; color: var(--text-muted);">COMMITMENT AMOUNT</span>
+              <span id="action-sheet-bill-amount" class="tabular-nums" style="font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--primary);">₹7,000</span>
+            </div>
+            <div id="action-sheet-bill-method" style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+              Payment mode: UPI Mandate
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+            <button class="btn-primary" onclick="markSelectedCommitmentPaid()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Mark as Paid (Completed This Cycle)
+            </button>
+            
+            <button class="btn-secondary" onclick="moveSelectedCommitmentDate()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span id="action-sheet-move-btn-text">Move to Next Cycle</span>
+            </button>
+
+            <button class="btn-secondary" onclick="openRescheduleModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              Reschedule to Custom Date...
+            </button>
+
+            <button class="btn-secondary" onclick="skipSelectedCommitment()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+              Skip This Cycle
+            </button>
+
+            <button class="btn-danger" onclick="deleteSelectedCommitment()">
+              Delete Commitment
+            </button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 4: COMMITMENT-AT-RISK ADVISOR
+             ========================================================== -->
+        <div id="risk-resolution-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3 style="color: var(--state-risk-text);">Pacing Guidance</h3>
+              <p>Actionable adjustment recommendations</p>
+            </div>
+            <button class="icon-btn" onclick="closeBottomSheet('risk-resolution-sheet')">✕</button>
+          </div>
+
+          <div class="alert-card" style="margin: 0 0 16px 0;">
+            <div class="alert-msg">
+              "You may be ₹2,400 short for your ₹7,000 insurance renewal on October 28."
+            </div>
+            <p style="font-size: 12px; color: var(--state-risk-text); line-height: 1.4;">
+              At your current daily spending pace (~₹1,450/day), your projected balance on 28 Oct will be ₹4,600, leaving a ₹2,400 shortfall for the full ₹7,000 premium.
+            </p>
+          </div>
+
+          <div class="section-header" style="padding: 0 0 8px 0;">
+            <span class="section-title">Actionable Options:</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+            <div class="card card-tappable" style="margin: 0; padding: 14px;" onclick="applyPacingAdjustment()">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <strong style="color: var(--primary);">Option 1: Adjust Daily Spending</strong>
+                <span class="chip-tag auto-debit">Recommended</span>
+              </div>
+              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+                Keep flexible spend under <strong>₹1,050/day</strong> for the next 12 days. Saves ₹2,400 and ensures 100% insurance coverage.
+              </p>
+            </div>
+
+            <div class="card card-tappable" style="margin: 0; padding: 14px;" onclick="applySavingsAdjustment()">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <strong>Option 2: Adjust Savings Goals</strong>
+              </div>
+              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+                Temporarily set aside ₹2,600 instead of ₹5,000 for Goa trip this cycle. Frees ₹2,400; extends trip target date by 1 month.
+              </p>
+            </div>
+
+            <div class="card card-tappable" style="margin: 0; padding: 14px;" onclick="applyGracePeriodShift()">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <strong>Option 3: Use Grace Period</strong>
+              </div>
+              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+                HDFC policy has a 15-day premium grace period ending 12 Nov without coverage lapse. Shift payment date to 2 Nov after salary credit.
+              </p>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 5: QUICK-ADD EXPENSE
+             ========================================================== -->
+        <div id="quick-expense-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3>Quick Log Expense</h3>
+              <p>Record a flexible spending purchase</p>
+            </div>
+            <button class="icon-btn" onclick="closeBottomSheet('quick-expense-sheet')">✕</button>
+          </div>
+
+          <!-- Mode Switch: Single Category vs Split across Categories -->
+          <div class="split-mode-toggle">
+            <button id="quick-mode-single" type="button" class="split-toggle-btn active" onclick="setQuickExpenseMode('single')">Single Category</button>
+            <button id="quick-mode-split" type="button" class="split-toggle-btn" onclick="setQuickExpenseMode('split')">Split across 2 Categories</button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">TOTAL AMOUNT (₹)</label>
+            <input id="quick-expense-amount" type="number" class="form-input tabular-nums" placeholder="500" style="font-size: 24px; font-weight: 700;" oninput="onQuickAmountInput()">
+            <div id="quick-amount-error" class="field-error-msg"></div>
+          </div>
+
+          <!-- Single Category Mode Container -->
+          <div id="quick-single-cat-container">
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" style="margin-bottom: 0;">SELECT CATEGORY</label>
+                <span class="section-link" style="font-size: 11.5px;" onclick="openAddCategoryModal('flexible')">+ New Category</span>
+              </div>
+              <select id="quick-expense-category-select" class="form-input" onchange="onQuickCategorySelectChange()">
+                <!-- Populated dynamically via app.js -->
+              </select>
+              <div id="quick-single-cat-error" class="field-error-msg"></div>
+            </div>
+
+            <!-- Quick tap chips for most common categories -->
+            <div id="quick-cat-chips" class="chip-group" style="margin-bottom: 14px;">
+              <!-- Populated dynamically via app.js -->
+            </div>
+          </div>
+
+          <!-- Split Category Mode Container -->
+          <div id="quick-split-cat-container" class="split-allocation-box" style="display: none;">
+            <div style="font-size: 11.5px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
+              SPLIT ALLOCATION (AUTO-BALANCED ACROSS 2 CATEGORIES)
+            </div>
+
+            <div class="split-alloc-row" style="margin-bottom: 4px;">
+              <select id="quick-split-cat-1" class="form-input" style="flex: 3; font-size: 13px;" onchange="validateQuickExpenseSplit()">
+                <!-- Populated dynamically via app.js -->
+              </select>
+              <input id="quick-split-amt-1" type="number" class="form-input tabular-nums" style="flex: 2; font-size: 13px; font-weight: 700;" placeholder="Amount" oninput="onSplitAmountInput(1)">
+            </div>
+            <div id="quick-split-1-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
+
+            <div class="split-alloc-row" style="margin-bottom: 4px;">
+              <select id="quick-split-cat-2" class="form-input" style="flex: 3; font-size: 13px;" onchange="validateQuickExpenseSplit()">
+                <!-- Populated dynamically via app.js -->
+              </select>
+              <input id="quick-split-amt-2" type="number" class="form-input tabular-nums" style="flex: 2; font-size: 13px; font-weight: 700;" placeholder="Amount" oninput="onSplitAmountInput(2)">
+            </div>
+            <div id="quick-split-2-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
+            <div id="quick-split-cat-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
+
+            <div id="quick-split-status" style="font-size: 11.5px; font-weight: 700; color: var(--primary); text-align: right;">
+              Allocated ₹0 of ₹0
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">STORE / MERCHANT NAME *</label>
+              <input id="quick-expense-merchant" type="text" class="form-input" placeholder="e.g. Swiggy / Toit / Blinkit" oninput="validateQuickExpenseFields()">
+              <div id="quick-merchant-error" class="field-error-msg"></div>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">TRANSACTION DATE *</label>
+              <input id="quick-expense-date" type="date" class="form-input" value="2026-10-20" onchange="validateQuickExpenseFields()">
+              <div id="quick-date-error" class="field-error-msg"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">OPTIONAL NOTE</label>
+            <input id="quick-expense-note" type="text" class="form-input" placeholder="e.g. Dinner with team / grocery refill">
+          </div>
+
+          <!-- Deduct from current balance checkbox -->
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 12.5px; color: var(--text-secondary);">
+            <input id="quick-expense-deduct-balance" type="checkbox" checked style="accent-color: var(--primary); width: 16px; height: 16px;">
+            <label for="quick-expense-deduct-balance" style="cursor: pointer;">
+              Also deduct from current available bank balance
+            </label>
+          </div>
+
+          <button id="btn-save-quick-expense" type="button" class="btn-primary" onclick="submitQuickExpense()">
+            Save Expense
+          </button>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 6: ADD COMMITMENT FORM
+             ========================================================== -->
+        <div id="add-commitment-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3>Add Commitment</h3>
+              <p>Rent, EMI, SIP, Insurance, Wi-Fi, Help</p>
+            </div>
+            <button class="icon-btn" onclick="closeBottomSheet('add-commitment-sheet')">✕</button>
+          </div>
+
+          <form id="add-commitment-form" onsubmit="submitNewCommitment(event)">
+            <div class="form-group">
+              <label class="form-label">COMMITMENT TITLE</label>
+              <input id="new-bill-name" type="text" class="form-input" placeholder="e.g. Wi-Fi Broadband" required>
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" style="margin-bottom: 0;">CATEGORY</label>
+                <span class="section-link" style="font-size: 11.5px;" onclick="openAddCategoryModal('commitment')">+ Add Category</span>
+              </div>
+              <select id="new-bill-category" class="form-input">
+                <!-- Dynamically populated via app.js -->
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">AMOUNT (₹)</label>
+                <input id="new-bill-amount" type="number" class="form-input tabular-nums" placeholder="2000" required>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">DUE DATE (CALENDAR PICKER)</label>
+                <input id="new-bill-date-picker" type="date" class="form-input" value="2026-10-26" required>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">RECURRENCE</label>
+                <select id="new-bill-recurrence" class="form-input">
+                  <option value="Monthly">Monthly (Every pay cycle)</option>
+                  <option value="One-time">One-time</option>
+                  <option value="Weekly">Weekly</option>
+                  <option value="Annual">Annual</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">PAYMENT METHOD</label>
+                <select id="new-bill-method" class="form-input">
+                  <option value="Auto-debit">Auto-debit</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Card Recurring">Card Recurring</option>
+                  <option value="Cash / Manual">Cash / Manual</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary">
+              Add Commitment
+            </button>
+          </form>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 7: FLEXIBLE SAVINGS CONTRIBUTION (REQUIREMENT 9.3)
+             ========================================================== -->
+        <div id="record-goal-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3 id="contribute-sheet-goal-title">Contribute to Goa Trip</h3>
+              <p id="contribute-sheet-goal-subtitle">Target: ₹40,000 · Saved: ₹15,000 · Remaining: ₹25,000</p>
+            </div>
+            <button class="icon-btn" onclick="closeBottomSheet('record-goal-sheet')">✕</button>
+          </div>
+
+          <div class="card" style="margin: 0 0 12px 0; background: var(--bg-subtle); padding: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+              <span>Planned Cycle Allocation: <strong id="contribute-sheet-planned">₹5,000</strong></span>
+              <span>Recommended: <strong id="contribute-sheet-recommended" style="color: var(--primary);">₹5,000/cycle</strong></span>
+            </div>
+            <div id="contribute-sheet-rec-note" style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+              Contributing ₹5,000 this cycle keeps you on track for March 2027 without straining your Safe to Spend.
+            </div>
+          </div>
+
+          <!-- Flexible Custom Contribution Input -->
+          <div class="form-group">
+            <label class="form-label">ENTER CONTRIBUTION AMOUNT (₹) (ANY VALID AMOUNT)</label>
+            <input id="goal-custom-contribute-input" type="number" class="form-input tabular-nums" value="5000" placeholder="Enter amount e.g. 1750" style="font-size: 20px; font-weight: 800;">
+          </div>
+
+          <!-- Optional Quick-Select Shortcut Chips -->
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">QUICK-FILL SHORTCUTS (OPTIONAL):</div>
+          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <button type="button" class="btn-secondary" style="flex: 1; height: 36px; font-size: 12px;" onclick="setContributeQuickAmount(1000)">₹1,000</button>
+            <button type="button" class="btn-secondary" style="flex: 1; height: 36px; font-size: 12px;" onclick="setContributeQuickAmount(2500)">₹2,500</button>
+            <button type="button" class="btn-secondary" style="flex: 1; height: 36px; font-size: 12px;" onclick="setContributeQuickAmount(5000)">₹5,000</button>
+            <button type="button" class="btn-secondary" style="flex: 1; height: 36px; font-size: 12px;" onclick="setContributeQuickAmount(10000)">₹10,000</button>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 12px; color: var(--text-secondary);">
+            <input id="goal-contribute-deduct-balance" type="checkbox" style="accent-color: var(--primary); width: 16px; height: 16px;">
+            <label for="goal-contribute-deduct-balance" style="cursor: pointer;">
+              Also deduct transfer from current available bank balance
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeBottomSheet('record-goal-sheet'); openEditGoalModal();">Edit Allocation</button>
+            <button type="button" class="btn-primary" style="flex: 2;" onclick="submitFlexibleGoalContribution()">Record Contribution</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 8: GOAL DETAILS (READ-ONLY: NO EDIT / CONTRIBUTE)
+             ========================================================== -->
+        <div id="goal-detail-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3 id="gdetail-title">Goa trip with friends</h3>
+              <p id="gdetail-status-sub">Target Completion: March 2027 · On Track</p>
+            </div>
+            <button type="button" class="icon-btn" onclick="closeBottomSheet('goal-detail-sheet')" aria-label="Close goal details">✕</button>
+          </div>
+
+          <div id="gdetail-body-content">
+            <!-- Dynamically populated via app.js -->
+          </div>
+
+          <div style="margin-top: 14px;">
+            <button type="button" class="btn-secondary" onclick="closeBottomSheet('goal-detail-sheet')">Close</button>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             BOTTOM SHEET 8B: MORE INSIGHTS DETAIL DRAWER (REQ 4.2)
+             ========================================================== -->
+        <div id="more-insights-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3 id="more-insights-title">Detailed Insights</h3>
+              <p id="more-insights-subtitle">Breakdown, cycle comparison & suggested actions</p>
+            </div>
+            <button type="button" class="icon-btn" onclick="closeBottomSheet('more-insights-sheet')" aria-label="Close insights drawer">✕</button>
+          </div>
+          <div id="more-insights-body">
+            <!-- Dynamically populated via app.js -->
+          </div>
+          <div style="margin-top: 14px;">
+            <button type="button" class="btn-secondary" onclick="closeBottomSheet('more-insights-sheet')">Close</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             BOTTOM SHEET 9: AUTO-TRACKING TRANSACTIONS REVIEW & IMPORT
+             ========================================================== -->
+        <div id="auto-transactions-review-sheet" class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div>
+              <h3>Automatic Transaction Detection</h3>
+              <p>Deduplication, transfer filtering & review</p>
+            </div>
+            <button class="icon-btn" onclick="closeBottomSheet('auto-transactions-review-sheet')">✕</button>
+          </div>
+
+          <!-- Paste / Parse Custom SMS or Email Notification -->
+          <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle);">
+            <label class="form-label" style="margin-bottom: 4px;">TEST TRANSACTION PARSER (PASTE SMS / EMAIL / STATEMENT LINE)</label>
+            <div style="display: flex; gap: 6px;">
+              <input id="raw-notification-parse-input" type="text" class="form-input" style="font-size: 12px; height: 38px;" placeholder="e.g. Paid Rs. 640 to Swiggy via UPI Ref 62910482">
+              <button type="button" class="btn-primary" style="width: auto; height: 38px; padding: 0 12px; font-size: 12px;" onclick="parseCustomNotificationText()">Parse</button>
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+              <button type="button" class="wb-btn" style="font-size: 10px; padding: 2px 6px;" onclick="loadSampleNotificationFeed()">+ Load Sample Multi-Source Feed (Swiggy, Duplicate, Refund, Self-Transfer)</button>
+            </div>
+          </div>
+
+          <div id="auto-detected-transactions-list" style="max-height: 310px; overflow-y: auto; margin-bottom: 12px;">
+            <!-- Dynamically rendered via app.js -->
+          </div>
+
+          <button type="button" class="btn-primary" onclick="confirmAllEligibleDetectedTransactions()">
+            Confirm & Add Eligible Expenses
+          </button>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 1: EDIT PROFILE DETAILS (ITEM 5.1 OVERRIDE)
+             ========================================================== -->
+        <div id="edit-profile-modal" class="dialog-modal scrollable-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 6px;">Edit Profile Details</h3>
+          <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 12px;">Update your name, contact details, and household info.</p>
+
+          <div class="form-group">
+            <label class="form-label">FULL NAME OR NICKNAME</label>
+            <input id="edit-profile-name-input" type="text" class="form-input" value="Rashika" placeholder="e.g. Rashika or Rashi" oninput="validateEditProfileInline()">
+            <div id="edit-profile-name-err" class="field-error-msg"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">EMAIL ADDRESS</label>
+            <input id="edit-profile-email-input" type="email" class="form-input" value="rashika@arthiva.app" oninput="validateEditProfileInline()">
+            <div id="edit-profile-email-err" class="field-error-msg"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">MOBILE NUMBER (10-DIGIT INDIAN FORMAT)</label>
+            <input id="edit-profile-mobile-input" type="tel" class="form-input tabular-nums" value="+91 98450 12345" placeholder="+91 98450 12345" oninput="validateEditProfileInline()">
+            <div id="edit-profile-mobile-err" class="field-error-msg"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">HOUSEHOLD NAME (OPTIONAL)</label>
+            <input id="edit-profile-household-input" type="text" class="form-input" value="Rashika's Household" placeholder="e.g. Sharma Household">
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 2;">
+              <label class="form-label">DATE OF BIRTH</label>
+              <input id="edit-profile-dob-input" type="date" class="form-input" value="1999-05-14" onchange="onProfileDobChange()">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">AGE (AUTO)</label>
+              <input id="edit-profile-age-display" type="text" class="form-input tabular-nums" value="27 yrs" readonly style="background: var(--bg-subtle); font-weight: 700;">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">ROLE / PROFESSION</label>
+              <input id="edit-profile-role-input" type="text" class="form-input" value="Product Analyst">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">CITY</label>
+              <input id="edit-profile-city-input" type="text" class="form-input" value="Bengaluru">
+            </div>
+          </div>
+
+          <!-- Verification Box shown when Email or Mobile is modified -->
+          <div id="edit-profile-verify-box" style="display: none; background: var(--primary-light); border: 1px solid var(--primary); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+            <div style="font-size: 11.5px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
+              🔒 Security Verification Required for Contact Change
+            </div>
+            <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">
+              Enter your 4-digit App-Lock PIN (or demo OTP <strong>482910</strong>) to verify changing your email/mobile:
+            </p>
+            <input id="edit-profile-verify-code" type="password" class="form-input tabular-nums" placeholder="Enter PIN or OTP (482910)" style="height: 36px; font-size: 13px;">
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('edit-profile-modal')">Cancel</button>
+            <button type="button" class="btn-primary" style="flex: 1;" onclick="saveProfileDetails()">Save</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 2: AVATAR PICKER & PHOTO UPLOAD WITH CROPPER (ITEM 5.2 OVERRIDE)
+             ========================================================== -->
+        <div id="avatar-picker-modal" class="dialog-modal scrollable-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 4px;">Update Profile Picture</h3>
+          <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 10px;">Choose a preset avatar or upload &amp; crop your own photo.</p>
+
+          <div class="split-mode-toggle" style="margin-bottom: 12px;">
+            <button id="avatar-tab-preset" type="button" class="split-toggle-btn active" onclick="switchAvatarModalTab('preset')">Choose avatar</button>
+            <button id="avatar-tab-upload" type="button" class="split-toggle-btn" onclick="switchAvatarModalTab('upload')">Upload image</button>
+          </div>
+
+          <!-- Option 1: Choose avatar (8+ preset avatars) -->
+          <div id="avatar-preset-section">
+            <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Illustrated Portraits (8 Presets)</div>
+            <div id="illustrated-avatar-grid" class="avatar-grid-illustrated">
+              <!-- Populated dynamically with 8 SVG illustrated avatars via app.js -->
+            </div>
+
+            <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 8px;">Classic Monograms</div>
+            <div class="avatar-grid" style="margin: 8px 0 12px 0;">
+              <button type="button" class="avatar-choice-btn" onclick="selectPresetAvatar('monogram', 'RP')">RP</button>
+              <button type="button" class="avatar-choice-btn" onclick="selectPresetAvatar('monogram', 'RK')">RK</button>
+              <button type="button" class="avatar-choice-btn" onclick="selectPresetAvatar('monogram', 'AN')">AN</button>
+              <button type="button" class="avatar-choice-btn" onclick="selectPresetAvatar('monogram', '✨')">✨</button>
+            </div>
+          </div>
+
+          <!-- Option 2: Upload image (JPG, PNG, WEBP up to 5 MB with circular crop/zoom) -->
+          <div id="avatar-upload-section" style="display: none;">
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label class="form-label">UPLOAD IMAGE (JPG, PNG, WEBP · MAX 5 MB)</label>
+              <input id="avatar-file-input" type="file" accept="image/jpeg,image/png,image/webp" class="form-input" onchange="handleCustomAvatarUpload(event)">
+              <div id="avatar-upload-error" class="field-error-msg"></div>
+            </div>
+
+            <!-- Circular Crop/Zoom Stage -->
+            <div id="avatar-crop-wrapper" class="avatar-crop-container" style="display: none;">
+              <div class="avatar-crop-stage">
+                <canvas id="avatar-crop-canvas" width="240" height="240" style="width: 120px; height: 120px; display: block;"></canvas>
+              </div>
+              <div style="width: 100%; padding: 0 12px;">
+                <label class="form-label" style="display: flex; justify-content: space-between; font-size: 10.5px;">
+                  <span>ZOOM &amp; FIT</span>
+                  <span id="avatar-zoom-label" class="tabular-nums">100%</span>
+                </label>
+                <input id="avatar-zoom-slider" type="range" min="1" max="3" step="0.05" value="1" style="width: 100%; accent-color: var(--primary);" oninput="onAvatarZoomChange(this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('avatar-picker-modal')">Cancel</button>
+            <button id="btn-save-cropped-avatar" type="button" class="btn-primary" style="flex: 1; display: none;" onclick="saveCroppedAvatar()">Save</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 3: DELETE ACCOUNT CONFIRMATION & REAUTHENTICATION
+             ========================================================== -->
+        <div id="delete-account-modal" class="dialog-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; color: #DC2626; margin-bottom: 6px;">Delete Account & Wipe Data?</h3>
+          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+            This permanently erases all financial records, commitments, expenses, savings goals, and settings stored in your browser. This action cannot be undone.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">STEP 1: ENTER APP-LOCK PIN OR PASSWORD TO RE-AUTHENTICATE</label>
+            <input id="delete-account-pin-input" type="password" class="form-input" placeholder="Enter PIN or Password">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">STEP 2: TYPE "DELETE" TO CONFIRM</label>
+            <input id="delete-account-confirm-input" type="text" class="form-input" placeholder="DELETE">
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('delete-account-modal')">Cancel</button>
+            <button class="btn-danger" style="flex: 1;" onclick="confirmDeleteAccount()">Delete Permanently</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 4: ADD NEW CUSTOM CATEGORY
+             ========================================================== -->
+        <div id="add-category-modal" class="dialog-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 6px;">Add New Category</h3>
+          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Create a custom category for commitments or flexible spending.</p>
+          <div class="form-group">
+            <label class="form-label">CATEGORY NAME</label>
+            <input id="new-cat-name-input" type="text" class="form-input" placeholder="e.g. Gym & Fitness / Pet Care / Books">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CATEGORY TYPE</label>
+            <select id="new-cat-type-select" class="form-input" onchange="toggleCategoryLimitInput()">
+              <option value="commitment">Fixed Commitment (Bill / EMI / Mandate)</option>
+              <option value="flexible" selected>Flexible Spending (Daily / Discretionary)</option>
+            </select>
+          </div>
+          <div id="new-cat-limit-group" class="form-group">
+            <label class="form-label">MONTHLY BUDGET LIMIT (₹) (OPTIONAL)</label>
+            <input id="new-cat-limit-input" type="number" class="form-input tabular-nums" placeholder="3000">
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('add-category-modal')">Cancel</button>
+            <button class="btn-primary" style="flex: 1;" onclick="saveCustomCategory()">Create Category</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 5: EDIT CATEGORY BUDGET & LIMIT
+             ========================================================== -->
+        <div id="edit-category-modal" class="dialog-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 6px;">Edit Category Budget</h3>
+          <p id="edit-cat-subtitle" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Update category name and spending limit.</p>
+          <div class="form-group">
+            <label class="form-label">CATEGORY NAME</label>
+            <input id="edit-cat-name-input" type="text" class="form-input" value="">
+          </div>
+          <div class="form-group">
+            <label class="form-label">MONTHLY LIMIT (₹)</label>
+            <input id="edit-cat-limit-input" type="number" class="form-input tabular-nums" value="">
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('edit-category-modal')">Cancel</button>
+            <button type="button" class="btn-primary" style="flex: 1;" onclick="saveEditedCategory()">Save Changes</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 6: RESCHEDULE COMMITMENT
+             ========================================================== -->
+        <div id="reschedule-commitment-modal" class="dialog-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 6px;">Reschedule Commitment</h3>
+          <p id="reschedule-modal-subtitle" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">Select a new due date for this commitment.</p>
+          <div class="form-group">
+            <label class="form-label">NEW DUE DATE (CALENDAR PICKER)</label>
+            <input id="reschedule-date-picker" type="date" class="form-input" value="2026-11-05" onchange="onRescheduleDateChange()">
+          </div>
+          <div id="reschedule-cycle-impact" style="font-size: 11.5px; color: var(--primary); margin-bottom: 14px; line-height: 1.4;">
+            Selecting a date after payday will automatically move this bill into the next cycle.
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('reschedule-commitment-modal')">Cancel</button>
+            <button class="btn-primary" style="flex: 1;" onclick="saveRescheduledDate()">Save Date</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 7: CREATE / EDIT SAVINGS GOAL (REQUIREMENT 9.1 - 9.4)
+             ========================================================== -->
+        <div id="edit-goal-modal" class="dialog-modal scrollable-modal">
+          <h3 id="goal-modal-heading" style="font-family: var(--font-display); font-size: 17px; margin-bottom: 4px;">Edit Savings Goal</h3>
+          <p id="goal-modal-subheading" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Update goal target, planned cycle contribution, and target date.</p>
+          <input id="edit-goal-id-input" type="hidden" value="">
+          <div class="form-group">
+            <label class="form-label">GOAL NAME</label>
+            <input id="edit-goal-title-input" type="text" class="form-input" value="Goa trip with friends" placeholder="e.g. Emergency Fund / MacBook" oninput="updateGoalProjectionInModal()">
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">TARGET AMOUNT (₹)</label>
+              <input id="edit-goal-target-input" type="number" class="form-input tabular-nums" value="40000" oninput="updateGoalProjectionInModal()">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">ALREADY SAVED (₹)</label>
+              <input id="edit-goal-saved-input" type="number" class="form-input tabular-nums" value="15000" oninput="updateGoalProjectionInModal()">
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">PLANNED ALLOCATION (₹/CYCLE)</label>
+              <input id="edit-goal-monthly-input" type="number" class="form-input tabular-nums" value="5000" oninput="updateGoalProjectionInModal()">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label class="form-label">TARGET COMPLETION DATE</label>
+              <input id="edit-goal-date-input" type="date" class="form-input" value="2027-03-31" onchange="updateGoalProjectionInModal()">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">LINKED ACCOUNT / SIP</label>
+            <input id="edit-goal-account-input" type="text" class="form-input" value="HDFC Savings ···4821 / Liquid Fund SIP" placeholder="e.g. HDFC Savings ···4821 or Parag Parikh Liquid SIP">
+          </div>
+          <div id="modal-goal-projection" class="goal-projection-badge" style="margin-top: 4px;">
+            <span id="modal-goal-projection-text">5 months needed • Projected completion: March 2027</span>
+          </div>
+          <div id="modal-goal-feasibility" class="goal-feasibility-note" style="display: none;"></div>
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('edit-goal-modal')">Cancel</button>
+            <button class="btn-primary" style="flex: 1;" onclick="saveEditedGoal()">Save Goal</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 8: SECURITY & AUTHENTICATION SETTINGS (REQ 5.1)
+             ========================================================== -->
+        <div id="security-settings-modal" class="dialog-modal scrollable-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 4px;">Security & App-Lock Settings</h3>
+          <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 12px;">Configure how Arthiva protects your financial dashboard upon re-entry.</p>
+
+          <div id="sec-validation-error" style="display: none; background: #FEE2E2; color: #B91C1C; font-size: 12px; font-weight: 600; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px;"></div>
+
+          <div class="form-group">
+            <label class="form-label">CURRENT PIN OR PASSWORD (REQUIRED TO SAVE CHANGES)</label>
+            <input id="sec-current-verify-input" type="password" class="form-input" placeholder="Enter current PIN or password">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">PREFERRED APP-LOCK METHOD</label>
+            <select id="sec-preferred-method-select" class="form-input" onchange="onPreferredLockMethodChange()">
+              <option value="pin">PIN (4-Digit Numeric Keypad)</option>
+              <option value="password">Password</option>
+            </select>
+          </div>
+
+          <!-- PIN Input Group (Shown ONLY when PIN is selected) -->
+          <div id="sec-pin-fields-group">
+            <div class="form-group">
+              <label class="form-label">NEW 4-DIGIT PIN</label>
+              <input id="sec-new-pin-input" type="password" maxlength="4" inputmode="numeric" pattern="[0-9]*" class="form-input tabular-nums" placeholder="Enter new 4-digit PIN" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4); validateSecurityMethodInputs();">
+            </div>
+            <div class="form-group">
+              <label class="form-label">CONFIRM NEW 4-DIGIT PIN</label>
+              <input id="sec-confirm-pin-input" type="password" maxlength="4" inputmode="numeric" pattern="[0-9]*" class="form-input tabular-nums" placeholder="Re-enter 4-digit PIN" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4); validateSecurityMethodInputs();">
+              <div id="sec-pin-validation-msg" style="font-size: 11px; margin-top: 4px; color: var(--text-muted);">Must be exactly 4 numeric digits.</div>
+            </div>
+          </div>
+
+          <!-- Password Input Group (Shown ONLY when Password is selected) -->
+          <div id="sec-password-fields-group" style="display: none;">
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" style="margin-bottom: 0;">NEW PASSWORD</label>
+                <button type="button" id="sec-toggle-pass-vis-btn" class="section-link" style="font-size: 11px; padding: 2px 6px;" onclick="toggleSecurityPasswordVisibility()">Show</button>
+              </div>
+              <input id="sec-new-password-input" type="password" class="form-input" placeholder="At least 6 characters" oninput="validateSecurityMethodInputs()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">CONFIRM NEW PASSWORD</label>
+              <input id="sec-confirm-password-input" type="password" class="form-input" placeholder="Re-enter new password" oninput="validateSecurityMethodInputs()">
+              <div id="sec-password-validation-msg" style="font-size: 11px; margin-top: 4px; color: var(--text-muted);">Minimum 6 characters required.</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">FALLBACK AUTHENTICATION METHOD</label>
+            <select id="sec-fallback-method-select" class="form-input">
+              <option value="password">Password Fallback</option>
+              <option value="pin">4-Digit PIN Fallback</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">AUTO-LOCK POLICY</label>
+            <select id="sec-lock-policy-select" class="form-input">
+              <option value="always">Lock on every app close/reopen & background return</option>
+              <option value="reopen">Lock on app close & reopen only</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('security-settings-modal')">Cancel</button>
+            <button type="button" class="btn-primary" style="flex: 1;" onclick="saveSecuritySettings()">Save Security</button>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             MODAL 10: IMPORT BANK / CREDIT CARD STATEMENT (REQ 3.1 - 3.3)
+             ========================================================== -->
+        <div id="import-statement-modal" class="dialog-modal scrollable-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 4px;">Import Statement</h3>
+          <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 12px;">
+            Upload an unprotected bank or credit card statement to extract transactions automatically.
+          </p>
+
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label class="form-label">SELECT STATEMENT FILE (.PDF, .CSV, .XLS, .XLSX)</label>
+            <input id="statement-file-input" type="file" accept=".pdf,.csv,.xls,.xlsx" class="form-input" onchange="onStatementFileSelected(event)">
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <button type="button" id="btn-process-statement" class="btn-primary" style="flex: 1;" onclick="processUploadedStatement()">Upload Statement</button>
+          </div>
+
+          <!-- 3.2 Short helper line under the upload button before any upload -->
+          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 12px;">
+            Upload an unprotected PDF, CSV or Excel statement.
+            <button type="button" class="section-link" style="font-size: 11.5px; padding: 0 2px; text-decoration: underline;" onclick="openUnprotectPdfFaq()">How to unprotect your bank statement PDF</button>
+          </div>
+
+          <!-- Upload Progress State -->
+          <div id="statement-upload-progress-box" style="display: none; margin: 12px 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 600; margin-bottom: 4px;">
+              <span id="statement-progress-label">Parsing statement...</span>
+              <span id="statement-progress-pct" class="tabular-nums">0%</span>
+            </div>
+            <div class="progress-track" style="height: 8px;">
+              <div id="statement-progress-fill" class="progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Status / Error / Success Message (3.1 Rejects protected PDFs with inline message + FAQ link) -->
+          <div id="statement-status-message" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-bottom: 12px; line-height: 1.45;"></div>
+
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('import-statement-modal')">Close</button>
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 9: CONSENT & VERIFICATION WIZARD FOR AUTO-TRACKING (REQ 10.3)
+             ========================================================== -->
+        <div id="auto-tracking-auth-modal" class="dialog-modal scrollable-modal">
+          <div id="auto-auth-wizard-content">
+            <!-- Dynamically rendered 5-step consent & OTP verification flow via app.js -->
+          </div>
+        </div>
+
+
+        <!-- ==========================================================
+             MODAL 11: RESET TO NEW USER CONFIRMATION (ITEM 8 — DEV/QA ONLY)
+             ========================================================== -->
+        <div id="reset-new-user-modal" class="dialog-modal">
+          <h3 style="font-family: var(--font-display); font-size: 17px; color: #DC2626; margin-bottom: 8px;">Reset to new user?</h3>
+          <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+            This will delete all data for this test account and restart as a new user. This can't be undone.
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('reset-new-user-modal')">Cancel</button>
+            <button type="button" class="btn-danger" style="flex: 1;" onclick="confirmResetToNewUser()">Reset</button>
+          </div>
+        </div>
+
+
+        <!-- Home Indicator Bar -->
+        <div class="device-home-indicator"></div>
+
+      </div><!-- /#mobile-device-frame -->
+    </div><!-- /#device-scale-wrapper -->
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

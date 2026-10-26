@@ -96,12 +96,17 @@ function updateOfflineUIIndicator(isOfflineOrHasQueue, count = 0) {
   if (!navigator.onLine) {
     indicator.style.display = "flex";
     indicator.innerHTML = `<span>⚡</span> You are offline. Changes saved locally.`;
-  } else if (count > 0) {
-    indicator.style.display = "flex";
-    indicator.innerHTML = `<span class="spin-icon">↻</span> Syncing ${count} pending update${count === 1 ? "" : "s"}...`;
   } else {
+    // When online, do not block the screen with persistent syncing pills
     indicator.style.display = "none";
   }
+}
+
+// Attempt immediate queue flush upon load if online
+if (navigator.onLine) {
+  setTimeout(() => {
+    flushOfflineQueue();
+  }, 500);
 }
 
 window.addEventListener("online", () => {

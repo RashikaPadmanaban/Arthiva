@@ -7,10 +7,10 @@
   <link rel="manifest" href="manifest.json">
   <title>Arthiva Money — India-First Personal & Household Finance</title>
   
-  <!-- Google Fonts: Bricolage Grotesque (Display/Hero) + Source Sans 3 (Humanist Body) -->
+  <!-- Google Fonts: Inter (Standardized App Typography) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css">
 </head>
@@ -203,7 +203,10 @@
                     <button id="btn-welcome-get-started" type="button" class="btn-primary" style="margin-bottom: 10px;" onclick="openAuthCredentialsView('signup')">
                       Get started
                     </button>
-                    <button id="btn-welcome-existing-user" type="button" class="btn-secondary" onclick="openAuthCredentialsView('signin')">
+                    <button id="btn-welcome-sample" type="button" class="btn-secondary" style="margin-bottom: 10px;" onclick="continueAsDemoUser()">
+                      See a sample
+                    </button>
+                    <button id="btn-welcome-existing-user" type="button" class="btn-secondary" style="border: none; background: transparent; font-size: 13px;" onclick="openAuthCredentialsView('signin')">
                       I already have an account
                     </button>
                   </div>
@@ -519,130 +522,160 @@
                 <div id="pay-cycle-days-left-badge" class="cycle-days-left">12 days left</div>
               </div>
 
-              <!-- Hero Safe-to-Spend Card -->
-              <div id="home-hero-card" class="card hero-safe-spend card-tappable" onclick="openBottomSheet('safe-to-spend-breakdown-sheet')">
+              <!-- Hero Safe-to-Spend Card (Item 4: Top to Bottom Hierarchy) -->
+              <div id="home-hero-card" class="card hero-safe-spend">
                 <div class="hero-header">
                   <div class="hero-label">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    Safe to Spend Before Payday
+                    <span>Safe to Spend</span>
                   </div>
-                  <button type="button" id="hero-view-details-btn" class="trace-pill" title="View safe-to-spend breakdown" aria-label="View safe-to-spend breakdown" onclick="event.stopPropagation(); openBottomSheet('safe-to-spend-breakdown-sheet')">
-                    <span>View details</span>
+                  <button type="button" id="hero-breakdown-btn" class="hero-breakdown-link-btn" onclick="openBottomSheet('safe-to-spend-breakdown-sheet')">
+                    <span>See breakdown</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </button>
                 </div>
 
-                <div id="hero-safe-amount" class="hero-amount tabular-nums">₹15,000</div>
+                <!-- Hero Headline -->
+                <div id="hero-safe-amount" class="hero-amount tabular-nums" style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin: 4px 0 2px 0;">₹1,250 safe to spend today</div>
                 
-                <div id="hero-pace-text" class="hero-pace tabular-nums">
-                  <span class="pace-highlight">₹1,250/day</span> · 12 days to payday (1 Nov)
+                <!-- Secondary Line with single Payday Countdown -->
+                <div id="hero-pace-text" class="hero-pace tabular-nums" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                  ₹15,000 till payday · 1 Nov · 12 days
                 </div>
 
-                <!-- 5.3 Plain-language Safe-to-Spend equation bar -->
-                <div id="hero-trace-equation-bar" class="hero-trace-equation tabular-nums">
-                  <span class="trace-term">Salary <strong id="hero-trace-salary">₹50,000</strong></span>
-                  <span class="trace-op">−</span>
-                  <span class="trace-term">Bills <strong id="hero-yet-to-pay-val">₹35,500</strong></span>
-                  <span class="trace-op">−</span>
-                  <span class="trace-term">SIPs <strong id="hero-trace-sips">₹3,000</strong></span>
-                  <span class="trace-op">−</span>
-                  <span class="trace-term">Goals <strong id="hero-goal-aside-val">₹5,000</strong></span>
-                  <span class="trace-op">=</span>
-                  <span class="trace-term">Safe to spend <strong id="hero-trace-safe" style="color: var(--primary);">₹15,000</strong></span>
+                <!-- 3-line calculation in plain words, top to bottom like a receipt -->
+                <div id="hero-receipt-box" class="hero-receipt-box tabular-nums">
+                  <div class="receipt-row">
+                    <span>In your account</span>
+                    <strong id="hero-receipt-balance">₹32,000</strong>
+                  </div>
+                  <div class="receipt-row">
+                    <span>Kept aside for bills &amp; savings</span>
+                    <strong id="hero-receipt-kept" style="color: var(--text-muted);">− ₹17,000</strong>
+                  </div>
+                  <hr class="receipt-divider">
+                  <div class="receipt-row receipt-total">
+                    <span>Safe to spend</span>
+                    <span id="hero-receipt-safe" class="receipt-safe-val">₹15,000</span>
+                  </div>
                 </div>
 
-                <!-- Pay Cycle Progress Bar (Dynamic) -->
-                <div class="cycle-progress-wrap">
-                  <div id="cycle-progress-meta-text" class="progress-meta">
-                    <span>Payday: 1 Oct</span>
-                    <span>Day 20 of 31 (65%)</span>
-                    <span>Next: 1 Nov</span>
+                <!-- Proportional Horizontal Bar (Kept aside vs Safe to spend) -->
+                <div class="hero-proportional-bar-wrap">
+                  <div class="hero-proportional-bar">
+                    <div id="hero-bar-kept" class="prop-segment-kept" style="width: 53%;" title="Kept aside"></div>
+                    <div id="hero-bar-safe" class="prop-segment-safe" style="width: 47%;" title="Safe to spend"></div>
                   </div>
-                  <div class="progress-track">
-                    <div id="cycle-progress-fill" class="progress-fill" style="width: 65%;"></div>
+                  <div class="hero-prop-labels">
+                    <span id="hero-prop-label-kept">Kept aside: ₹17,000 (53%)</span>
+                    <span id="hero-prop-label-safe">Safe to spend: ₹15,000 (47%)</span>
                   </div>
+                </div>
+
+                <!-- Freshness line with Update link -->
+                <div class="hero-freshness-row">
+                  <span id="hero-freshness-text">Based on balance you updated 2 days ago</span>
+                  <button type="button" onclick="openBalanceCheckinSheet()">Update</button>
                 </div>
               </div>
 
-              <!-- 10.1 Empty State Box for Safe to Spend (When no salary/payday is set) -->
+              <!-- Zero-balance placeholder state card when user hasn't entered balance -->
+              <div id="home-zero-balance-card" class="card hero-safe-spend" style="display: none;">
+                <div class="hero-header">
+                  <div class="hero-label">Safe to Spend</div>
+                </div>
+                <div class="hero-amount tabular-nums" style="font-size: 26px; font-weight: 800; color: var(--text-muted); margin: 6px 0;">₹— safe to spend today</div>
+                <div class="hero-receipt-box tabular-nums">
+                  <div class="receipt-row">
+                    <span>In your account</span>
+                    <strong>₹—</strong>
+                  </div>
+                  <div class="receipt-row">
+                    <span>Kept aside for bills &amp; savings</span>
+                    <strong style="color: var(--text-muted);">− ₹—</strong>
+                  </div>
+                  <hr class="receipt-divider">
+                  <div class="receipt-row receipt-total">
+                    <span>Safe to spend</span>
+                    <span class="receipt-safe-val" style="color: var(--text-muted);">₹—</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-primary" style="margin-top: 10px;" onclick="openBalanceCheckinSheet()">Add your balance</button>
+              </div>
+
+              <!-- Guided Next Step Card (Replaces empty states for new users) -->
+              <div id="home-guided-next-step" class="guided-next-step-card" style="display: none;">
+                <div class="guided-step-header">
+                  <span id="guided-step-badge" class="guided-accuracy-badge">40% accurate</span>
+                  <span style="font-size: 11px; font-weight: 700; color: var(--primary);">Guided Next Step</span>
+                </div>
+                <div id="guided-step-title" class="guided-step-title">Add rent &amp; EMIs → biggest impact</div>
+                <div id="guided-step-subtitle" class="guided-step-subtitle">Quickly ring-fence your major commitments so your Safe to Spend estimate is fully trustworthy.</div>
+
+                <div id="guided-step-quick-chips" class="quick-bill-chips">
+                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Rent', 20000, 2)">+ Rent</button>
+                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Phone EMI', 4000, 22)">+ EMI</button>
+                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Electricity', 1500, 15)">+ Electricity</button>
+                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Wi-Fi', 999, 18)">+ Wi-Fi</button>
+                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Cook/Maid', 3500, 5)">+ Cook/Maid</button>
+                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Insurance', 7000, 28)">+ Insurance</button>
+                </div>
+
+                <button id="guided-step-action-btn" type="button" class="btn-primary" style="height: 38px; font-size: 12.5px;" onclick="openQuickBillModal()">
+                  Add a bill now
+                </button>
+              </div>
+
+              <!-- 10.1 Empty State Box for Safe to Spend (Fallback) -->
               <div id="home-empty-state" class="empty-state-box" style="display: none;">
                 <div class="empty-state-icon">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                 </div>
                 <h3>Add your salary and payday to see this</h3>
                 <p>We calculate how much is safe to spend before your next payday after bills, SIPs, and savings goals are protected.</p>
-                <button type="button" class="btn-primary" style="width: auto; padding: 0 20px; margin: 0 auto;" onclick="openIncomeSetupStep()">Set up income</button>
+                <button type="button" class="btn-primary" style="width: auto; padding: 0 20px; margin: 0 auto;" onclick="startOnboardingFlow(1)">Set up income</button>
               </div>
 
-              <!-- Commitment-At-Risk Alert Card (Warm Amber, Never Shaming) -->
+              <!-- Single Alert Slot (Used strictly when there is a shortfall) -->
               <div id="home-alert-card" class="alert-card" style="display: none;">
                 <div class="alert-top">
                   <div class="alert-tag">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    Pacing Attention
+                    <span>Shortfall Alert</span>
                   </div>
                   <button class="alert-close" onclick="this.parentElement.parentElement.style.display='none'" title="Dismiss">✕</button>
                 </div>
-                <div class="alert-msg">
-                  At this pace you'll be ₹2,400 short for your insurance renewal on 28 Oct.
+                <div id="home-alert-msg" class="alert-msg">
+                  At this pace you'll be short for upcoming obligations.
                 </div>
                 <div class="alert-action-row">
-                  <span class="alert-link" onclick="openRiskResolutionSheet()">See adjustment options →</span>
-                  <span style="font-size: 11px; opacity: 0.8;">Actionable guidance</span>
+                  <button type="button" class="btn-primary" style="height: 32px; font-size: 11.5px; width: auto; padding: 0 12px;" onclick="applyRecommendedShortfallFix()">
+                    1-Tap Fix: Set daily limit to ₹1,050 →
+                  </button>
+                  <span class="alert-link" style="font-size: 11px;" onclick="openRiskResolutionSheet()">More options</span>
                 </div>
               </div>
 
-              <!-- Balance Check-in Prompt Card (Honest Labeling) -->
-              <div class="card balance-checkin-card">
-                <div class="checkin-left">
-                  <span class="checkin-label">CURRENT AVAILABLE BALANCE</span>
-                  <span id="checkin-balance-val" class="checkin-val tabular-nums">₹32,000</span>
-                  <span class="checkin-stamp">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    <span id="checkin-balance-stamp">You entered · 2 days ago</span>
-                  </span>
-                </div>
-                <button class="checkin-btn" onclick="openBalanceCheckinSheet()">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                  Check in
-                </button>
-              </div>
-
-              <!-- 2.3 Upcoming Bills: Show only the "Pay (Before 1 Nov)" group -->
-              <div class="section-header">
-                <span class="section-title">Upcoming Bills · <span id="home-yet-to-pay-label" style="color: var(--state-risk);">Pay (Before 1 Nov)</span></span>
-                <button type="button" class="section-link" onclick="switchScreen('activity')">All bills →</button>
+              <!-- Next 3 Bills Due Before Payday + "See all" (Replaces old balance checkin card & lists) -->
+              <div class="section-header" style="margin-top: 14px;">
+                <span class="section-title">Next Bills Due Before Payday</span>
+                <button type="button" class="section-link" onclick="switchScreen('activity')">See all →</button>
               </div>
               <div class="card" style="padding: 6px 12px; margin-bottom: 14px;">
                 <div id="home-bills-list" class="bill-list">
-                  <!-- Injected dynamically via app.js -->
+                  <!-- Injected dynamically via app.js (Up to 3 bills) -->
                 </div>
               </div>
 
-              <!-- 2.4 & 2.5 Savings Goals Section (No Contribute button on Home; all goals rendered in uniform cards) -->
+              <!-- Savings Goals section -->
               <div class="section-header">
                 <span class="section-title">Savings Goals</span>
                 <div class="section-header-actions">
                   <button type="button" class="section-link" onclick="openCreateGoalModal()">+ Add a Goal</button>
                 </div>
               </div>
-              <div id="home-goals-container">
-                <div id="home-goal-widget" class="card goal-widget">
-                  <div class="goal-top">
-                    <div class="goal-info">
-                      <h4 id="goal-title-display">Goa trip with friends</h4>
-                      <p>Target: <span id="goal-target-text" class="tabular-nums">₹40,000</span> · <span id="goal-remaining-text" class="tabular-nums">₹25,000 left</span></p>
-                    </div>
-                    <div id="goal-percent-text" class="goal-ring-badge">38%</div>
-                  </div>
-                  <div class="goal-progress-bar">
-                    <div id="goal-bar-fill" class="goal-progress-fill" style="width: 38%;"></div>
-                  </div>
-                  <div class="goal-foot" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span>Saved: <strong id="goal-saved-text" class="tabular-nums">₹15,000</strong> · Cycle Plan: <strong id="goal-cycle-alloc" class="tabular-nums">₹5,000</strong></span>
-                    <button type="button" class="section-link" onclick="openGoalDetailModal('goal-1')">Details</button>
-                  </div>
-                </div>
+              <div id="home-goals-container" style="margin-bottom: 24px; display: flex; flex-direction: column;">
+                <!-- Dynamically rendered rich savings goal cards via app.js -->
               </div>
 
             </div>
@@ -736,9 +769,9 @@
               <!-- Allocation Macro Bar -->
               <div class="card" style="padding: 16px; margin-bottom: 14px;">
                 <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-                  <span><strong id="plan-macro-commitments">₹38,500</strong> Commitments</span>
+                  <span><strong id="plan-macro-commitments">₹12,000</strong> Bills due</span>
                   <span><strong id="plan-macro-goal">₹5,000</strong> Goal</span>
-                  <span><strong id="plan-macro-flexible">₹6,500</strong> Flexible</span>
+                  <span><strong id="plan-macro-flexible" style="color: var(--primary);">₹15,000</strong> Safe to spend</span>
                 </div>
                 <div style="height: 10px; border-radius: 6px; overflow: hidden; display: flex; background: var(--bg-subtle);">
                   <div id="macro-bar-commitments" style="width: 77%; background: var(--primary);" title="Fixed Commitments"></div>
@@ -755,17 +788,6 @@
                 <div class="section-header-actions" style="margin-left: auto;">
                   <button type="button" class="section-link" onclick="openAddCategoryModal('flexible')">+ Add category</button>
                   <button type="button" class="section-link" onclick="openQuickAddExpenseSheet()">+ Quick log</button>
-                </div>
-              </div>
-
-              <!-- Recent Expenses Live Feed on Plan Screen -->
-              <div id="plan-recent-expenses-section" style="padding: 0 16px 14px 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Recent Expenses</span>
-                  <span id="plan-expenses-count-badge" class="status-pill within" style="font-size: 10px; padding: 2px 8px;">0 logged</span>
-                </div>
-                <div id="plan-recent-expenses-list">
-                  <!-- Populated dynamically via app.js -->
                 </div>
               </div>
 
@@ -796,12 +818,26 @@
                 <div class="app-title-area">
                   <div class="header-title-text">
                     <h2>Financial Insights</h2>
-                    <p>Unified pay-cycle analytics & recap</p>
+                    <p>Unified pay-cycle analytics &amp; recap</p>
                   </div>
                 </div>
-                <button id="ins-header-pdf-btn" class="btn-secondary" style="width: auto; height: 36px; padding: 0 12px; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="exportDataPDF(this)" title="Download PDF Pay Cycle Recap">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                  <span>Export PDF</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <button type="button" class="icon-btn" onclick="toggleInsightsMenu()" title="Period &amp; Export Options" aria-label="Insights options">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Top-Right Dropdown Menu for Period & Export (Item 5 Rework) -->
+              <div id="insights-top-menu" style="display: none; margin: 0 16px 12px 16px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Reporting Period</div>
+                <select id="insights-period-select" class="form-input" style="font-size: 12.5px; height: 36px; margin-bottom: 10px;" onchange="onInsightsPeriodChange(this.value)">
+                  <option value="current" selected>Current Cycle (Oct – Nov 2026)</option>
+                  <option value="previous">Previous Cycle (Sep – Oct 2026)</option>
+                </select>
+                <button id="ins-header-pdf-btn" class="btn-primary" style="height: 36px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="exportDataPDF(this)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Export PDF Recap</span>
                 </button>
               </div>
 
@@ -832,7 +868,7 @@
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <span style="font-size: 14px;">🔒</span>
                       <div style="text-align: left;">
-                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Weekly & Monthly Trend</div>
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Weekly &amp; Monthly Trend</div>
                         <div style="font-size: 10.5px; color: var(--text-muted);">Unlocks after first logged expenses</div>
                       </div>
                     </div>
@@ -854,7 +890,7 @@
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <span style="font-size: 14px;">🔒</span>
                       <div style="text-align: left;">
-                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Savings & Pacing Highlights</div>
+                        <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);">Savings &amp; Pacing Highlights</div>
                         <div style="font-size: 10.5px; color: var(--text-muted);">Unlocks personalized auto-observations</div>
                       </div>
                     </div>
@@ -864,137 +900,102 @@
               </div>
 
               <div id="insights-populated-container">
-                <!-- Reporting Period / Pay-Cycle Selector -->
-                <div class="insights-period-bar">
-                  <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary);">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                    <span>Reporting Period:</span>
+                <!-- 1 Headline Sentence (Item 5 Rework) -->
+                <div class="card" style="padding: 14px 16px; margin: 0 16px 14px 16px; background: var(--lavender-light); border: 1.5px solid var(--lavender-border);">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span style="font-size: 16px;">💡</span>
+                    <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Cycle Summary</span>
                   </div>
-                  <select id="insights-period-select" class="period-select" onchange="onInsightsPeriodChange(this.value)">
-                    <option value="current" selected>Current Cycle (Oct – Nov 2026)</option>
-                    <option value="previous">Previous Cycle (Sep – Oct 2026)</option>
-                  </select>
-                </div>
-
-                <!-- 4.1 Financial Summary Cards (6 Key Metrics) -->
-                <div class="insight-stat-grid-6">
-                  <div class="insight-stat-card">
-                    <h5>Total Income</h5>
-                    <div id="ins-income-val" class="stat-value tabular-nums">₹50,000</div>
-                    <span id="ins-income-sub" style="font-size: 10.5px; color: var(--primary);">Recorded take-home</span>
-                  </div>
-                  <div class="insight-stat-card">
-                    <h5>Total Expenditure</h5>
-                    <div id="ins-expenditure-val" class="stat-value tabular-nums">₹40,900</div>
-                    <span id="ins-expenditure-sub" style="font-size: 10.5px; color: var(--text-secondary);">Paid bills + Flexible spend</span>
-                  </div>
-                  <div class="insight-stat-card">
-                    <h5>Remaining Available</h5>
-                    <div id="ins-remaining-val" class="stat-value tabular-nums">₹15,000</div>
-                    <span id="ins-remaining-sub" style="font-size: 10.5px; color: var(--state-safe);">Safe to spend before payday</span>
-                  </div>
-                  <div class="insight-stat-card">
-                    <h5>Savings & Rate</h5>
-                    <div id="ins-savings-val" class="stat-value tabular-nums">₹5,000 (10%)</div>
-                    <span id="ins-savings-sub" style="font-size: 10.5px; color: var(--text-muted);">Planned vs actual saved</span>
-                  </div>
-                  <div class="insight-stat-card">
-                    <h5>Planned Commitments</h5>
-                    <div id="ins-commitments-val" class="stat-value tabular-nums">₹38,500</div>
-                    <span id="ins-commitments-sub" style="font-size: 10.5px; color: var(--text-secondary);">₹26,500 paid · ₹12,000 due</span>
-                  </div>
-                  <div class="insight-stat-card">
-                    <h5>Budget Utilization</h5>
-                    <div id="ins-budget-util-val" class="stat-value tabular-nums">76%</div>
-                    <span id="ins-budget-util-sub" style="font-size: 10.5px; color: var(--primary);">₹14,400 of ₹19,000 plan</span>
+                  <div id="ins-headline-sentence" style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); line-height: 1.45;">
+                    You are on track: ₹15,000 is safe to spend across the next 12 days to payday.
                   </div>
                 </div>
 
-                <!-- 4.2 Chart 1: Outflow vs Income (Simple Horizontal Bar Comparison) -->
-                <div class="insight-card-box">
-                  <div id="ins-chart1-finding" class="insight-finding-title">82% of your take-home pay is allocated before 1 Nov</div>
-                  <div class="insight-headline-row">
-                    <div id="ins-chart1-headline" class="insight-headline-num tabular-nums">₹40,900 spent</div>
-                    <span id="ins-spent-pct-badge" class="insight-headline-delta good">−2% vs last cycle</span>
+                <!-- Top 3 Insight Cards (Item 5 Rework) -->
+                <div style="padding: 0 16px;">
+                  <!-- Card 1: Outflow vs Income -->
+                  <div class="insight-card-box">
+                    <div id="ins-chart1-finding" class="insight-finding-title">82% of take-home pay is allocated before 1 Nov</div>
+                    <div class="insight-headline-row">
+                      <div id="ins-chart1-headline" class="insight-headline-num tabular-nums">₹40,900 spent</div>
+                      <span id="ins-spent-pct-badge" class="insight-headline-delta good">−2% vs last cycle</span>
+                    </div>
+                    <div id="ins-income-exp-chart"></div>
                   </div>
-                  <div id="ins-income-exp-chart">
-                    <!-- Dynamically rendered via app.js -->
+
+                  <!-- Card 2: Category Spending Comparison -->
+                  <div class="insight-card-box">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                      <div id="ins-chart2-finding" class="insight-finding-title" style="flex: 1;">Dining out &amp; food delivery is your largest flexible expense</div>
+                      <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                        <button id="ins-cat-mode-flex" type="button" class="wb-btn active" style="padding: 2px 8px; font-size: 10.5px;" onclick="setInsightsCategoryMode('flexible')">Flexible</button>
+                        <button id="ins-cat-mode-all" type="button" class="wb-btn" style="padding: 2px 8px; font-size: 10.5px;" onclick="setInsightsCategoryMode('all')">All</button>
+                      </div>
+                    </div>
+                    <div class="insight-headline-row">
+                      <div id="ins-chart2-headline" class="insight-headline-num tabular-nums">₹5,800 on Dining</div>
+                      <span id="ins-chart2-delta" class="insight-headline-delta bad">+₹1,700 (+41%) vs last cycle</span>
+                    </div>
+                    <div id="ins-category-breakdown-container"></div>
+                    <div id="ins-category-drilldown" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle);"></div>
                   </div>
-                  <div class="insight-more-footer">
-                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('outflow')">More insights →</button>
+
+                  <!-- Card 3: Savings Goals Progress -->
+                  <div class="insight-card-box">
+                    <div id="ins-chart4-finding" class="insight-finding-title">You have funded 57% of your total ₹1L savings goals</div>
+                    <div class="insight-headline-row">
+                      <div id="ins-chart4-headline" class="insight-headline-num tabular-nums">₹57,000 saved</div>
+                      <span id="ins-chart4-delta" class="insight-headline-delta good">+₹8,000 planned this cycle</span>
+                    </div>
+                    <div id="ins-goals-progress-list"></div>
                   </div>
                 </div>
 
-                <!-- 4.3 Chart 2: Category Spending Comparison (Simple Horizontal Bars — No Pie/Doughnut) -->
-                <div class="insight-card-box">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                    <div id="ins-chart2-finding" class="insight-finding-title" style="flex: 1;">You spent 41% more on dining out & food delivery than last cycle</div>
-                    <div style="display: flex; gap: 4px; flex-shrink: 0;">
-                      <button id="ins-cat-mode-flex" type="button" class="wb-btn active" style="padding: 2px 8px; font-size: 10.5px;" onclick="setInsightsCategoryMode('flexible')">Flexible</button>
-                      <button id="ins-cat-mode-all" type="button" class="wb-btn" style="padding: 2px 8px; font-size: 10.5px;" onclick="setInsightsCategoryMode('all')">All</button>
+                <!-- Collapsible "See full recap" for the 6 KPI tiles -->
+                <div style="padding: 0 16px 20px 16px;">
+                  <button type="button" class="btn-secondary" style="width: 100%; height: 40px; font-size: 12.5px; margin-bottom: 12px;" onclick="toggleFullRecapTiles()">
+                    <span id="recap-toggle-label">See full recap (6 key metrics) ▼</span>
+                  </button>
+
+                  <div id="recap-kpi-tiles-container" style="display: none;">
+                    <div class="insight-stat-grid-6">
+                      <div class="insight-stat-card">
+                        <h5>Total Income</h5>
+                        <div id="ins-income-val" class="stat-value tabular-nums">₹50,000</div>
+                        <span id="ins-income-sub" style="font-size: 10.5px; color: var(--primary);">Recorded take-home</span>
+                      </div>
+                      <div class="insight-stat-card">
+                        <h5>Total Expenditure</h5>
+                        <div id="ins-expenditure-val" class="stat-value tabular-nums">₹40,900</div>
+                        <span id="ins-expenditure-sub" style="font-size: 10.5px; color: var(--text-secondary);">Paid bills + Flexible spend</span>
+                      </div>
+                      <div class="insight-stat-card">
+                        <h5>Safe to Spend</h5>
+                        <div id="ins-remaining-val" class="stat-value tabular-nums">₹15,000</div>
+                        <span id="ins-remaining-sub" style="font-size: 10.5px; color: var(--state-safe);">Safe to spend before payday</span>
+                      </div>
+                      <div class="insight-stat-card">
+                        <h5>Savings &amp; Rate</h5>
+                        <div id="ins-savings-val" class="stat-value tabular-nums">₹5,000 (10%)</div>
+                        <span id="ins-savings-sub" style="font-size: 10.5px; color: var(--text-muted);">Planned vs actual saved</span>
+                      </div>
+                      <div class="insight-stat-card">
+                        <h5>Planned Commitments</h5>
+                        <div id="ins-commitments-val" class="stat-value tabular-nums">₹38,500</div>
+                        <span id="ins-commitments-sub" style="font-size: 10.5px; color: var(--text-secondary);">₹26,500 paid · ₹12,000 due</span>
+                      </div>
+                      <div class="insight-stat-card">
+                        <h5>Budget Utilization</h5>
+                        <div id="ins-budget-util-val" class="stat-value tabular-nums">76%</div>
+                        <span id="ins-budget-util-sub" style="font-size: 10.5px; color: var(--primary);">₹14,400 of ₹19,000 plan</span>
+                      </div>
                     </div>
                   </div>
-                  <div class="insight-headline-row">
-                    <div id="ins-chart2-headline" class="insight-headline-num tabular-nums">₹5,800 on Dining</div>
-                    <span id="ins-chart2-delta" class="insight-headline-delta bad">+₹1,700 (+41%) vs last cycle</span>
-                  </div>
-                  <div id="ins-category-breakdown-container">
-                    <!-- Dynamically rendered clean horizontal bar comparison via app.js -->
-                  </div>
-                  <div id="ins-category-drilldown" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle);"></div>
-                  <div class="insight-more-footer">
-                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('categories')">More insights →</button>
-                  </div>
                 </div>
 
-                <!-- 4.4 Chart 3: Planned Budget vs. Actual Spending (Progress Bars for Limits) -->
-                <div class="insight-card-box">
-                  <div id="ins-chart3-finding" class="insight-finding-title">4 of 5 flexible categories are within budget; Dining is ₹800 over</div>
-                  <div class="insight-headline-row">
-                    <div id="ins-chart3-headline" class="insight-headline-num tabular-nums">₹14,400 of ₹19K</div>
-                    <span id="ins-chart3-delta" class="insight-headline-delta good">₹4,600 budget buffer left</span>
-                  </div>
-                  <div id="ins-budget-vs-actual-list">
-                    <!-- Dynamically rendered via app.js -->
-                  </div>
-                  <div class="insight-more-footer">
-                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('budgets')">More insights →</button>
-                  </div>
-                </div>
-
-                <!-- 4.5 Chart 4: Savings Goals Progress (Progress Bars for Goals) -->
-                <div class="insight-card-box">
-                  <div id="ins-chart4-finding" class="insight-finding-title">You have funded 57% of your total ₹1L savings goals</div>
-                  <div class="insight-headline-row">
-                    <div id="ins-chart4-headline" class="insight-headline-num tabular-nums">₹57,000 saved</div>
-                    <span id="ins-chart4-delta" class="insight-headline-delta good">+₹8,000 planned this cycle</span>
-                  </div>
-                  <div id="ins-goals-progress-list">
-                    <!-- Dynamically rendered via app.js -->
-                  </div>
-                  <div class="insight-more-footer">
-                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('goals')">More insights →</button>
-                  </div>
-                </div>
-
-                <!-- 4.6 Chart 5: Spending Trend Over Time (Clean SVG Line Chart) -->
-                <div class="insight-card-box">
-                  <div id="ins-chart5-finding" class="insight-finding-title">Flexible spending is 2% higher than your 4-cycle average</div>
-                  <div class="insight-headline-row">
-                    <div id="ins-chart5-headline" class="insight-headline-num tabular-nums">₹14,400 this cycle</div>
-                    <span id="ins-chart5-delta" class="insight-headline-delta bad">+₹150 (+1%) vs last cycle</span>
-                  </div>
-                  <div id="ins-spending-trends-list">
-                    <!-- Dynamically rendered SVG Line Chart + axis labels via app.js -->
-                  </div>
-                  <div class="insight-more-footer">
-                    <button type="button" class="section-link" onclick="openMoreInsightsSheet('trends')">More insights →</button>
-                  </div>
-                </div>
-
-                <!-- 4.7 Personalized Financial Recommendations (Hidden when insufficient data per 10.1) -->
-                <div id="ins-recommendations-section">
-                  <div class="section-header">
+                <!-- 4.7 Personalized Financial Recommendations -->
+                <div id="ins-recommendations-section" style="padding: 0 16px 24px 16px;">
+                  <div class="section-header" style="padding-left: 0; padding-right: 0;">
                     <span class="section-title">Personalized Recommendations</span>
                   </div>
                   <div id="ins-recommendations-list" class="recommendations-grid">
@@ -1265,7 +1266,7 @@
                     </div>
                     <div style="text-align: right;">
                       <div id="pro-tier-price-text" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--primary);">₹149<span style="font-size: 12px; font-weight: 600;">/mo</span></div>
-                      <div id="pro-tier-sub-text" style="font-size: 10px; color: var(--text-muted);">or ₹999/year</div>
+                      <div id="pro-tier-sub-text" style="font-size: 11px; color: var(--text-muted);">or ₹999/year</div>
                     </div>
                   </div>
                   <ul class="sub-feature-list">
@@ -1287,7 +1288,7 @@
                     </div>
                     <div style="text-align: right;">
                       <div id="family-tier-price-text" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--pink-accent);">₹249<span style="font-size: 12px; font-weight: 600;">/mo</span></div>
-                      <div id="family-tier-sub-text" style="font-size: 10px; color: var(--text-muted);">or ₹1,799/year · Up to 4 members</div>
+                      <div id="family-tier-sub-text" style="font-size: 11px; color: var(--text-muted);">or ₹1,799/year · Up to 4 members</div>
                     </div>
                   </div>
                   <ul class="sub-feature-list">
@@ -1379,119 +1380,38 @@
 
 
             <!-- ==========================================================
-                 SCREEN 6: FINANCIAL ONBOARDING — STEPS 1 TO 7 + FINISH (PART A SECTION 5 OVERRIDE)
+                 SCREEN 6: ONBOARDING IN 60 SECONDS (3 QUESTIONS -> ESTIMATE -> APP-LOCK)
                  ========================================================== -->
             <div id="screen-onboarding" class="app-screen">
               <div class="onboarding-screen">
                 
                 <div>
                   <div class="onboarding-step-indicator">
-                    <span id="onboarding-step-pill" class="wizard-step-pill">Step 1 of 7</span>
+                    <span id="onboarding-step-pill" class="wizard-step-pill">Step 1 of 3</span>
                     <div class="step-dots" style="flex: 1; margin: 0 12px;">
                       <div id="step-dot-1" class="step-dot active"></div>
                       <div id="step-dot-2" class="step-dot"></div>
                       <div id="step-dot-3" class="step-dot"></div>
-                      <div id="step-dot-4" class="step-dot"></div>
-                      <div id="step-dot-5" class="step-dot"></div>
-                      <div id="step-dot-6" class="step-dot"></div>
-                      <div id="step-dot-7" class="step-dot"></div>
                     </div>
-                    <button id="onboarding-skip-btn" type="button" class="skip-btn" style="display: none;" onclick="skipCurrentOnboardingStep()">Skip for now</button>
                   </div>
 
-                  <!-- Step 1 of 7 — Profile (Full name required, email or mobile whichever wasn't used to sign in optional, avatar preset or upload) -->
+                  <!-- Step 1: Three questions only -->
                   <div id="onboarding-step-1" class="onboarding-step-content">
-                    <h2 class="onboarding-hero-title">Profile</h2>
-                    <p class="onboarding-subtitle">Tell us your full name, optional contact info, and choose a profile avatar.</p>
+                    <h2 class="onboarding-hero-title">Setup your money in 60 seconds</h2>
+                    <p class="onboarding-subtitle">Answer 3 simple questions to calculate what's safe to spend before your next payday.</p>
 
-                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
-                      <div id="onb-avatar-preview" class="profile-avatar-lg" style="width: 56px; height: 56px; font-size: 20px; cursor: pointer;" onclick="openAvatarPickerModal()">A</div>
-                      <div>
-                        <button type="button" class="btn-secondary" style="width: auto; height: 36px; padding: 0 14px; font-size: 12px;" onclick="openAvatarPickerModal()">Choose or upload avatar</button>
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Preset avatars or upload JPG / PNG / WEBP</div>
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label class="form-label" for="onb-profile-name-input">FULL NAME <span style="color: var(--primary);">*</span></label>
-                      <input id="onb-profile-name-input" type="text" class="form-input" placeholder="e.g. Rashika Sharma" oninput="validateOnboardingStep1Profile(false); saveOnboardingDraft();">
-                      <div id="onb-profile-name-error" class="field-error-msg"></div>
-                    </div>
-
-                    <div id="onb-secondary-contact-group" class="form-group">
-                      <label id="onb-secondary-contact-label" class="form-label" for="onb-secondary-contact-input">EMAIL ADDRESS (OPTIONAL)</label>
-                      <input id="onb-secondary-contact-input" type="text" class="form-input" placeholder="name@example.com" oninput="validateOnboardingStep1Profile(false); saveOnboardingDraft();">
-                      <div id="onb-secondary-contact-error" class="field-error-msg"></div>
-                    </div>
-                  </div>
-
-                  <!-- Step 2 of 7 — Household (Individual or household; if household add members: name, relation, earning yes/no. Optional) -->
-                  <div id="onboarding-step-2" class="onboarding-step-content" style="display: none;">
-                    <h2 class="onboarding-hero-title">Household</h2>
-                    <p class="onboarding-subtitle">Are you managing finances as an individual or together with a household?</p>
-
-                    <div class="split-mode-toggle" style="margin-bottom: 14px;">
-                      <button id="onb-mode-individual" type="button" class="split-toggle-btn active" onclick="setOnboardingHouseholdMode('Individual')">Individual</button>
-                      <button id="onb-mode-household" type="button" class="split-toggle-btn" onclick="setOnboardingHouseholdMode('Household')">Household</button>
-                    </div>
-
-                    <div id="onb-household-fields" style="display: none;">
-                      <div class="form-group">
-                        <label class="form-label" for="onb-household-name-input">HOUSEHOLD NAME (OPTIONAL)</label>
-                        <input id="onb-household-name-input" type="text" class="form-input" placeholder="e.g. Sharma Household" oninput="saveOnboardingDraft()">
-                      </div>
-
-                      <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
-                        <div style="font-size: 11.5px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; text-transform: uppercase;">Add Household Member</div>
-                        <div class="form-group" style="margin-bottom: 8px;">
-                          <label class="form-label" for="onb-member-name-input">MEMBER NAME</label>
-                          <input id="onb-member-name-input" type="text" class="form-input" placeholder="e.g. Rohan Sharma" oninput="clearOnbInlineError('onb-member-error')">
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                          <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                            <label class="form-label" for="onb-member-relation-select">RELATION</label>
-                            <select id="onb-member-relation-select" class="form-input">
-                              <option value="Spouse / Partner">Spouse / Partner</option>
-                              <option value="Parent">Parent</option>
-                              <option value="Sibling">Sibling</option>
-                              <option value="Child">Child</option>
-                              <option value="Flatmate">Flatmate</option>
-                              <option value="Other">Other</option>
-                            </select>
-                          </div>
-                          <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                            <label class="form-label" for="onb-member-earning-select">EARNING?</label>
-                            <select id="onb-member-earning-select" class="form-input">
-                              <option value="Yes">Yes (Earning)</option>
-                              <option value="No">No (Dependent)</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div id="onb-member-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
-                        <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingHouseholdMember()">+ Add member</button>
-                      </div>
-
-                      <div id="onb-household-members-list"></div>
-                    </div>
-                  </div>
-
-                  <!-- Step 3 of 7 — Income & pay cycle (Monthly take-home salary required > ₹0, payday date 1–31, other regular income optional) -->
-                  <div id="onboarding-step-3" class="onboarding-step-content" style="display: none;">
-                    <h2 class="onboarding-hero-title">Income &amp; pay cycle</h2>
-                    <p class="onboarding-subtitle">
-                      Enter your monthly take-home salary and payday date to power <strong>Safe to spend before payday</strong>.
-                    </p>
-                    
-                    <div class="form-group">
-                      <label class="form-label" for="onboarding-salary-input">MONTHLY TAKE-HOME SALARY (₹) <span style="color: var(--primary);">*</span></label>
-                      <input id="onboarding-salary-input" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 50000" style="font-size: 18px; font-weight: 700;" oninput="validateOnboardingStep3Income(false); saveOnboardingDraft();">
+                    <!-- Q1: Monthly Take-Home Pay -->
+                    <div class="form-group" style="margin-bottom: 14px;">
+                      <label class="form-label" for="onboarding-salary-input">1. MONTHLY TAKE-HOME SALARY (₹) <span style="color: var(--primary);">*</span></label>
+                      <input id="onboarding-salary-input" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 50000" style="font-size: 18px; font-weight: 700;" oninput="validateFastOnboardingQ1(); saveOnboardingDraft();">
                       <div id="onb-salary-error" class="field-error-msg"></div>
                     </div>
 
-                    <div class="form-group">
-                      <label class="form-label" for="onboarding-payday-select">PAYDAY DATE (1–31)</label>
+                    <!-- Q2: Payday Date -->
+                    <div class="form-group" style="margin-bottom: 14px;">
+                      <label class="form-label" for="onboarding-payday-select">2. PAYDAY DATE (1–31) <span style="color: var(--primary);">*</span></label>
                       <select id="onboarding-payday-select" class="form-input" style="font-weight: 700;" onchange="saveOnboardingDraft()">
-                        <option value="1">1st of every month</option>
+                        <option value="1" selected>1st of every month</option>
                         <option value="2">2nd of every month</option>
                         <option value="3">3rd of every month</option>
                         <option value="4">4th of every month</option>
@@ -1525,201 +1445,85 @@
                       </select>
                     </div>
 
-                    <div class="form-group">
-                      <label class="form-label" for="onboarding-other-income-input">OTHER REGULAR MONTHLY INCOME (₹, OPTIONAL)</label>
-                      <input id="onboarding-other-income-input" type="number" min="0" class="form-input tabular-nums" placeholder="e.g. 10000 (Rental / Freelance)" oninput="saveOnboardingDraft()">
+                    <!-- Q3: Current Balance -->
+                    <div class="form-group" style="margin-bottom: 14px;">
+                      <label class="form-label" for="onboarding-balance-input">3. CURRENT AVAILABLE BANK BALANCE (₹) <span style="color: var(--primary);">*</span></label>
+                      <input id="onboarding-balance-input" type="number" min="0" class="form-input tabular-nums" placeholder="e.g. 24000" style="font-size: 18px; font-weight: 700;" oninput="validateFastOnboardingQ3(); saveOnboardingDraft();">
+                      <div id="onb-balance-error" class="field-error-msg"></div>
+                      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">What's in your account right now. Check your bank app or UPI glance.</div>
                     </div>
                   </div>
 
-                  <!-- Step 4 of 7 — Bank accounts & statements (Add bank accounts: bank name, account type, current balance and/or Upload Statement. Optional) -->
-                  <div id="onboarding-step-4" class="onboarding-step-content" style="display: none;">
-                    <h2 class="onboarding-hero-title">Bank accounts &amp; statements</h2>
-                    <p class="onboarding-subtitle">Add your primary bank account balance or upload an unprotected bank statement.</p>
-
-                    <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
-                      <div style="font-size: 11.5px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; text-transform: uppercase;">Add Bank Account</div>
-                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <div class="form-group" style="flex: 1.2; margin-bottom: 0;">
-                          <label class="form-label" for="onb-bank-name-input">BANK NAME</label>
-                          <input id="onb-bank-name-input" type="text" class="form-input" placeholder="e.g. HDFC Bank" oninput="clearOnbInlineError('onb-bank-error')">
-                        </div>
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onb-bank-type-select">ACCOUNT TYPE</label>
-                          <select id="onb-bank-type-select" class="form-input">
-                            <option value="Salary / Savings">Salary / Savings</option>
-                            <option value="Savings">Savings</option>
-                            <option value="Current">Current</option>
-                            <option value="NRO / NRE">NRO / NRE</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div class="form-group" style="margin-bottom: 8px;">
-                        <label class="form-label" for="onb-bank-balance-input">CURRENT BALANCE (₹)</label>
-                        <input id="onb-bank-balance-input" type="number" min="0" class="form-input tabular-nums" placeholder="e.g. 32000" oninput="clearOnbInlineError('onb-bank-error')">
-                      </div>
-                      <div id="onb-bank-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
-                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingBankAccount()">+ Add bank account</button>
+                  <!-- Step 2: Immediate Safe-to-Spend ("Rough estimate") -->
+                  <div id="onboarding-step-2" class="onboarding-step-content" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 14px;">
+                      <span class="chip-tag auto-debit" style="font-size: 11.5px; padding: 4px 10px;">⚡ Instant Calculation</span>
                     </div>
-
-                    <div id="onb-bank-accounts-list" style="margin-bottom: 12px;"></div>
-
-                    <!-- Upload Statement block with helper and FAQ link -->
-                    <div class="card" style="margin: 0; padding: 12px; border: 1px dashed var(--border-strong);">
-                      <div style="font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Have a bank statement?</div>
-                      <button type="button" class="btn-secondary" style="height: 38px; font-size: 12.5px;" onclick="openImportStatementModal()">
-                        Upload Statement
-                      </button>
-                      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
-                        Upload an unprotected PDF, CSV or Excel statement.
-                        <button type="button" class="section-link" style="font-size: 11px; padding: 0; text-decoration: underline;" onclick="openUnprotectPdfFaq()">How to unprotect your bank statement PDF</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Step 5 of 7 — Bills & commitments (Add rent, utilities, EMIs, insurance premiums, school fees, staff salaries: name, amount, due date, frequency. Optional) -->
-                  <div id="onboarding-step-5" class="onboarding-step-content" style="display: none;">
-                    <h2 class="onboarding-hero-title">Bills &amp; commitments</h2>
-                    <p class="onboarding-subtitle">Add your recurring bills (rent, utilities, EMIs, insurance, school fees, staff salaries) so Arthiva ring-fences them before payday.</p>
-
-                    <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
-                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <div class="form-group" style="flex: 1.3; margin-bottom: 0;">
-                          <label class="form-label" for="onb-bill-name-input">BILL / COMMITMENT NAME</label>
-                          <input id="onb-bill-name-input" type="text" class="form-input" placeholder="e.g. House Rent / Phone EMI" oninput="clearOnbInlineError('onb-bill-error')">
-                        </div>
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onb-bill-category-select">TYPE</label>
-                          <select id="onb-bill-category-select" class="form-input">
-                            <option value="Rent">Rent</option>
-                            <option value="Electricity and utilities">Utilities</option>
-                            <option value="EMIs and loans">EMIs &amp; Loans</option>
-                            <option value="Insurance">Insurance Premium</option>
-                            <option value="School and education">School Fees</option>
-                            <option value="Cook and household help">Staff Salaries</option>
-                            <option value="Netflix and subscriptions">Subscriptions</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onb-bill-amount-input">AMOUNT (₹)</label>
-                          <input id="onb-bill-amount-input" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 15000" oninput="clearOnbInlineError('onb-bill-error')">
-                        </div>
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onb-bill-due-input">DUE DAY (1–31)</label>
-                          <input id="onb-bill-due-input" type="number" min="1" max="31" value="5" class="form-input tabular-nums">
-                        </div>
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onb-bill-freq-select">FREQUENCY</label>
-                          <select id="onb-bill-freq-select" class="form-input">
-                            <option value="Monthly">Monthly</option>
-                            <option value="Quarterly">Quarterly</option>
-                            <option value="Annual">Annual</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div id="onb-bill-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
-                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingBillCommitment()">+ Add bill or commitment</button>
-                    </div>
-
-                    <div id="onb-bills-list"></div>
-                  </div>
-
-                  <!-- Step 6 of 7 — Savings & investments (Add SIPs: fund name, amount, date; FDs, PPF/EPF/NPS, gold. Optional) -->
-                  <div id="onboarding-step-6" class="onboarding-step-content" style="display: none;">
-                    <h2 class="onboarding-hero-title">Savings &amp; investments</h2>
-                    <p class="onboarding-subtitle">Add your recurring SIPs, FDs, PPF/EPF/NPS, or gold investments.</p>
-
-                    <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
-                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onb-inv-type-select">INSTRUMENT TYPE</label>
-                          <select id="onb-inv-type-select" class="form-input">
-                            <option value="SIP (Mutual Fund)">SIP (Mutual Fund)</option>
-                            <option value="Fixed Deposit (FD)">Fixed Deposit (FD)</option>
-                            <option value="PPF / EPF / NPS">PPF / EPF / NPS</option>
-                            <option value="Gold / SGB">Gold / SGB</option>
-                          </select>
-                        </div>
-                        <div class="form-group" style="flex: 1.3; margin-bottom: 0;">
-                          <label class="form-label" for="onb-inv-name-input">FUND / INVESTMENT NAME</label>
-                          <input id="onb-inv-name-input" type="text" class="form-input" placeholder="e.g. Nifty 50 Index SIP" oninput="clearOnbInlineError('onb-inv-error')">
-                        </div>
-                      </div>
-
-                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onb-inv-amount-input">AMOUNT (₹)</label>
-                          <input id="onb-inv-amount-input" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 5000" oninput="clearOnbInlineError('onb-inv-error')">
-                        </div>
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onb-inv-day-input">DEBIT / SIP DAY (1–31)</label>
-                          <input id="onb-inv-day-input" type="number" min="1" max="31" value="10" class="form-input tabular-nums">
-                        </div>
-                      </div>
-                      <div id="onb-inv-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
-                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingInvestment()">+ Add investment / SIP</button>
-                    </div>
-
-                    <div id="onb-investments-list"></div>
-                  </div>
-
-                  <!-- Step 7 of 7 — Goals (Suggest "Emergency Medical Buffer" first, plus custom goals: name, target amount, target date, monthly contribution. Optional) -->
-                  <div id="onboarding-step-7" class="onboarding-step-content" style="display: none;">
-                    <h2 class="onboarding-hero-title">Goals</h2>
-                    <p class="onboarding-subtitle">Start with our recommended <strong>Emergency Medical Buffer</strong> first, or add custom savings goals.</p>
-
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
-                      <button type="button" class="chip-pill selected" onclick="fillOnboardingGoalSuggestion('Emergency Medical Buffer', 60000, '2027-06-30', 5000)">
-                        ★ Suggested: Emergency Medical Buffer (₹60,000)
-                      </button>
-                      <button type="button" class="chip-pill" onclick="fillOnboardingGoalSuggestion('Goa trip with friends', 40000, '2027-03-31', 5000)">
-                        Goa trip (₹40,000)
-                      </button>
-                    </div>
-
-                    <div class="card" style="margin: 0 0 12px 0; padding: 12px; background: var(--bg-subtle); border: 1px solid var(--border-subtle);">
-                      <div class="form-group" style="margin-bottom: 8px;">
-                        <label class="form-label" for="onboarding-goal-name">GOAL NAME</label>
-                        <input id="onboarding-goal-name" type="text" class="form-input" placeholder="e.g. Emergency Medical Buffer" oninput="clearOnbInlineError('onb-goal-error')">
-                      </div>
-
-                      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onboarding-goal-target">TARGET AMOUNT (₹)</label>
-                          <input id="onboarding-goal-target" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 60000" oninput="clearOnbInlineError('onb-goal-error')">
-                        </div>
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                          <label class="form-label" for="onboarding-goal-monthly">MONTHLY CONTRIBUTION (₹)</label>
-                          <input id="onboarding-goal-monthly" type="number" min="1" class="form-input tabular-nums" placeholder="e.g. 5000" oninput="clearOnbInlineError('onb-goal-error')">
-                        </div>
-                      </div>
-
-                      <div class="form-group" style="margin-bottom: 8px;">
-                        <label class="form-label" for="onboarding-goal-target-date">TARGET DATE</label>
-                        <input id="onboarding-goal-target-date" type="date" class="form-input" value="2027-06-30">
-                      </div>
-                      <div id="onb-goal-error" class="field-error-msg" style="margin-bottom: 6px;"></div>
-                      <button type="button" class="btn-secondary" style="height: 36px; font-size: 12px;" onclick="addOnboardingGoalItem()">+ Add goal to list</button>
-                    </div>
-
-                    <div id="onb-goals-list"></div>
-                  </div>
-
-                  <!-- Finish Screen: "You're all set!" with summary of each step + "Edit" link next to each, then "Go to Home" -->
-                  <div id="onboarding-step-8" class="onboarding-step-content" style="display: none;">
-                    <div class="brand-icon-circle" style="width: 52px; height: 52px; margin: 0 auto 12px auto;">
-                      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#FFFFFF" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>
-                    <h2 class="onboarding-hero-title" style="text-align: center;">You're all set!</h2>
-                    <p class="onboarding-subtitle" style="text-align: center; margin-bottom: 12px;">
-                      Review what you added across your 7 setup steps below. Tap <strong>Edit</strong> next to any section to make changes.
+                    <h2 class="onboarding-hero-title" style="text-align: center;">Your Safe-to-Spend Estimate</h2>
+                    <p class="onboarding-subtitle" style="text-align: center; margin-bottom: 16px;">
+                      Here is your first rough estimate until payday.
                     </p>
-                    <div id="onboarding-finish-summary-card" class="card" style="margin: 0 0 14px 0; padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border-subtle);">
-                      <!-- Populated dynamically via renderOnboardingFinishSummary() -->
+
+                    <div class="card" style="margin: 0 0 16px 0; padding: 18px 16px; background: var(--bg-subtle); border: 1.5px solid var(--primary); text-align: center; border-radius: var(--radius-md);">
+                      <div style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                        Rough estimate · 40% accuracy
+                      </div>
+                      <div id="onb-est-daily-amt" style="font-family: var(--font-display); font-size: 32px; font-weight: 800; color: var(--text-primary); margin: 6px 0;">
+                        ₹0
+                      </div>
+                      <div id="onb-est-daily-sub" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px;">
+                        safe to spend today
+                      </div>
+                      <div class="receipt-divider" style="margin: 12px 0;"></div>
+                      <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px;">
+                        <span style="color: var(--text-secondary);">Total safe till payday:</span>
+                        <strong id="onb-est-total-safe" class="tabular-nums">₹0</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; font-size: 12.5px;">
+                        <span style="color: var(--text-secondary);">Days till payday:</span>
+                        <strong id="onb-est-days-count" class="tabular-nums">0 days</strong>
+                      </div>
+                    </div>
+
+                    <p style="font-size: 12px; color: var(--text-muted); line-height: 1.45; text-align: center; margin: 0 8px 10px 8px;">
+                      Adding your rent, EMIs, and recurring bills next will boost your estimate accuracy to 95%+.
+                    </p>
+                  </div>
+
+                  <!-- Step 3: App-Lock Setup Prompt -->
+                  <div id="onboarding-step-3" class="onboarding-step-content" style="display: none;">
+                    <div class="brand-icon-circle" style="width: 52px; height: 52px; margin: 0 auto 12px auto;">
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <h2 class="onboarding-hero-title" style="text-align: center;">Protect your dashboard</h2>
+                    <p class="onboarding-subtitle" style="text-align: center; margin-bottom: 16px;">
+                      Secure Arthiva Money with biometric unlock (fingerprint or face) or a quick 4-digit PIN.
+                    </p>
+
+                    <div class="card" style="margin: 0 0 14px 0; padding: 14px; background: var(--bg-surface); border: 1px solid var(--border-subtle);">
+                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <div>
+                          <div style="font-weight: 700; font-size: 13.5px; color: var(--text-primary);">Biometric Unlock (Recommended)</div>
+                          <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">Fingerprint / Face ID via device security</div>
+                        </div>
+                        <input id="onb-lock-biometric-toggle" type="checkbox" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+                      </div>
+
+                      <div class="receipt-divider" style="margin: 10px 0;"></div>
+
+                      <div>
+                        <label class="form-label" for="onb-lock-pin-input">4-DIGIT BACKUP PIN <span style="color: var(--primary);">*</span></label>
+                        <input id="onb-lock-pin-input" type="password" inputmode="numeric" maxlength="4" class="form-input tabular-nums" placeholder="••••" style="letter-spacing: 6px; font-size: 18px; text-align: center;" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4); clearOnbInlineError('onb-lock-pin-error');">
+                        <div id="onb-lock-pin-error" class="field-error-msg"></div>
+                      </div>
+                    </div>
+
+                    <div class="privacy-shield-note" style="justify-content: center; text-align: center; margin-top: 10px;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                      <span>100% on-device protection. Zero unauthorized access.</span>
                     </div>
                   </div>
+
                 </div>
 
                 <!-- Onboarding Footer Actions -->
@@ -1766,7 +1570,7 @@
 
             <button class="nav-item" data-screen="profile" onclick="switchScreen('profile')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-              <span>Profile</span>
+              <span>Me</span>
             </button>
           </nav>
 
@@ -1829,46 +1633,26 @@
           <div class="sheet-header">
             <div>
               <h3>Safe to spend breakdown</h3>
-              <p>How your safe-to-spend figure is calculated</p>
+              <p>Itemized calculation matching your card</p>
             </div>
             <button type="button" class="icon-btn" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet')" aria-label="Close">✕</button>
           </div>
 
           <div class="breakdown-lines-card">
-            <div class="breakdown-line-item">
-              <span class="bl-label">Salary</span>
-              <span id="eq-val-salary" class="bl-amount tabular-nums">₹50,000</span>
-            </div>
             <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); openBalanceCheckinSheet();">
-              <span class="bl-label">Current balance</span>
-              <span id="eq-val-balance" class="bl-amount tabular-nums">₹32,000</span>
+              <span class="bl-label" style="font-weight: 700;">In your account (Current balance)</span>
+              <span id="eq-val-balance" class="bl-amount tabular-nums" style="font-weight: 800; font-size: 15px;">₹32,000</span>
             </div>
-            <!-- Spent This Cycle (Option A: Explicit deduction from Opening/Current Balance) -->
-            <div id="breakdown-spent-cycle-row" class="breakdown-line-item" style="cursor: pointer;" onclick="toggleBreakdownSpentDetails()">
-              <div>
-                <span class="bl-label">Spent this cycle</span>
-                <span id="eq-val-spent-sub" style="display: block; font-size: 10.5px; color: var(--text-muted);">No expenses logged yet</span>
+
+            <!-- Itemized Kept Aside Section -->
+            <div style="margin: 8px 0 4px 0; padding-top: 8px; border-top: 1px dashed var(--border-subtle);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Kept Aside for Bills &amp; Savings</span>
+                <strong id="eq-val-kept-total" style="font-size: 12px; color: var(--text-muted);" class="tabular-nums">− ₹17,000</strong>
               </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span id="eq-val-spent" class="bl-amount deduction tabular-nums">₹0</span>
-                <span id="eq-spent-expand-icon" style="font-size: 10px; color: var(--text-muted); transition: transform 0.2s;">▼</span>
+              <div id="breakdown-kept-aside-items" style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Injected via app.js -->
               </div>
-            </div>
-            <!-- Collapsible individual entries list -->
-            <div id="breakdown-spent-details-list" style="display: none; background: var(--bg-subtle); border-radius: 8px; padding: 8px 10px; margin: 4px 0 8px 0; max-height: 160px; overflow-y: auto; font-size: 11.5px;">
-              <!-- Injected dynamically via app.js -->
-            </div>
-            <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); switchScreen('activity');">
-              <span class="bl-label">Bills</span>
-              <span id="eq-val-bills" class="bl-amount deduction tabular-nums">−₹12,000</span>
-            </div>
-            <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); switchScreen('activity');">
-              <span class="bl-label">SIPs</span>
-              <span id="eq-val-sips" class="bl-amount deduction tabular-nums">₹0</span>
-            </div>
-            <div class="breakdown-line-item" style="cursor: pointer;" onclick="closeBottomSheet('safe-to-spend-breakdown-sheet'); openRecordGoalSheet();">
-              <span class="bl-label">Goals</span>
-              <span id="eq-val-savings" class="bl-amount deduction tabular-nums">−₹5,000</span>
             </div>
 
             <hr class="breakdown-divider">
@@ -1982,29 +1766,36 @@
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
-            <button class="btn-primary" onclick="markSelectedCommitmentPaid()">
+            <button class="btn-primary" onclick="markSelectedCommitmentPaid()" style="height: 44px; font-size: 13.5px;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              Mark as Paid (Completed This Cycle)
+              Mark as Paid
             </button>
             
-            <button class="btn-secondary" onclick="moveSelectedCommitmentDate()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              <span id="action-sheet-move-btn-text">Move to Next Cycle</span>
+            <button type="button" class="btn-secondary" style="height: 38px; font-size: 12.5px;" onclick="toggleBillMoreOptions()">
+              <span id="bill-more-options-label">More actions ▼</span>
             </button>
 
-            <button class="btn-secondary" onclick="openRescheduleModal()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              Reschedule to Custom Date...
-            </button>
+            <!-- Collapsed secondary actions under More (Item 5 Rework) -->
+            <div id="bill-more-actions-menu" style="display: none; flex-direction: column; gap: 8px; padding-top: 4px;">
+              <button class="btn-secondary" onclick="moveSelectedCommitmentDate()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span id="action-sheet-move-btn-text">Move to Next Cycle</span>
+              </button>
 
-            <button class="btn-secondary" onclick="skipSelectedCommitment()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-              Skip This Cycle
-            </button>
+              <button class="btn-secondary" onclick="openRescheduleModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                Reschedule to Custom Date...
+              </button>
 
-            <button class="btn-danger" onclick="deleteSelectedCommitment()">
-              Delete Commitment
-            </button>
+              <button class="btn-secondary" onclick="skipSelectedCommitment()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                Skip This Cycle
+              </button>
+
+              <button class="btn-danger" onclick="deleteSelectedCommitment()">
+                Delete Commitment
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2036,32 +1827,44 @@
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
-            <div class="card card-tappable" style="margin: 0; padding: 14px;" onclick="applyPacingAdjustment()">
+            <!-- Recommended Option (Single-tap primary action) -->
+            <div class="card card-tappable" style="margin: 0; padding: 14px; border: 1.5px solid var(--primary); background: var(--bg-surface);" onclick="applyPacingAdjustment()">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <strong style="color: var(--primary);">Option 1: Adjust Daily Spending</strong>
-                <span class="chip-tag auto-debit">Recommended</span>
+                <strong style="color: var(--primary);">Recommended: Adjust Daily Spending</strong>
+                <span class="chip-tag auto-debit">1-Tap Fix</span>
               </div>
-              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35; margin-bottom: 10px;">
                 Keep flexible spend under <strong>₹1,050/day</strong> for the next 12 days. Saves ₹2,400 and ensures 100% insurance coverage.
               </p>
+              <button type="button" class="btn-primary" style="height: 36px; font-size: 12.5px;">
+                Apply 1-Tap Adjustment
+              </button>
             </div>
 
-            <div class="card card-tappable" style="margin: 0; padding: 14px;" onclick="applySavingsAdjustment()">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <strong>Option 2: Adjust Savings Goals</strong>
-              </div>
-              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
-                Temporarily set aside ₹2,600 instead of ₹5,000 for Goa trip this cycle. Frees ₹2,400; extends trip target date by 1 month.
-              </p>
-            </div>
+            <!-- Collapsed Alternative Options -->
+            <div style="margin-top: 4px;">
+              <button type="button" class="section-link" style="font-size: 12px; color: var(--text-secondary);" onclick="toggleOtherPacingOptions()">
+                <span id="other-pacing-options-label">Other options (2) ▼</span>
+              </button>
+              <div id="other-pacing-options-drawer" style="display: none; flex-direction: column; gap: 8px; margin-top: 8px;">
+                <div class="card card-tappable" style="margin: 0; padding: 12px;" onclick="applySavingsAdjustment()">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <strong>Option 2: Adjust Savings Goals</strong>
+                  </div>
+                  <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+                    Temporarily set aside ₹2,600 instead of ₹5,000 for Goa trip this cycle. Frees ₹2,400; extends trip target date by 1 month.
+                  </p>
+                </div>
 
-            <div class="card card-tappable" style="margin: 0; padding: 14px;" onclick="applyGracePeriodShift()">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <strong>Option 3: Use Grace Period</strong>
+                <div class="card card-tappable" style="margin: 0; padding: 12px;" onclick="applyGracePeriodShift()">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <strong>Option 3: Use Grace Period</strong>
+                  </div>
+                  <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
+                    HDFC policy has a 15-day premium grace period ending 12 Nov without coverage lapse. Shift payment date to 2 Nov after salary credit.
+                  </p>
+                </div>
               </div>
-              <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.35;">
-                HDFC policy has a 15-day premium grace period ending 12 Nov without coverage lapse. Shift payment date to 2 Nov after salary credit.
-              </p>
             </div>
           </div>
         </div>
@@ -2075,29 +1878,23 @@
           <div class="sheet-header">
             <div>
               <h3>Quick Log Expense</h3>
-              <p>Record a flexible spending purchase</p>
+              <p>Amount and category only · Auto-deducted from balance</p>
             </div>
             <button class="icon-btn" onclick="closeBottomSheet('quick-expense-sheet')">✕</button>
           </div>
 
-          <!-- Mode Switch: Single Category vs Split across Categories -->
-          <div class="split-mode-toggle">
-            <button id="quick-mode-single" type="button" class="split-toggle-btn active" onclick="setQuickExpenseMode('single')">Single Category</button>
-            <button id="quick-mode-split" type="button" class="split-toggle-btn" onclick="setQuickExpenseMode('split')">Split across 2 Categories</button>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">TOTAL AMOUNT (₹)</label>
-            <input id="quick-expense-amount" type="number" class="form-input tabular-nums" placeholder="500" style="font-size: 24px; font-weight: 700;" oninput="onQuickAmountInput()">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label">AMOUNT (₹) *</label>
+            <input id="quick-expense-amount" type="number" class="form-input tabular-nums" placeholder="500" style="font-size: 26px; font-weight: 800;" oninput="onQuickAmountInput()">
             <div id="quick-amount-error" class="field-error-msg"></div>
           </div>
 
-          <!-- Single Category Mode Container -->
+          <!-- Single Category Mode Container (Default) -->
           <div id="quick-single-cat-container">
             <div class="form-group">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label class="form-label" style="margin-bottom: 0;">SELECT CATEGORY</label>
-                <span class="section-link" style="font-size: 11.5px;" onclick="openAddCategoryModal('flexible')">+ New Category</span>
+                <label class="form-label" style="margin-bottom: 0;">CATEGORY *</label>
+                <button type="button" id="quick-split-toggle-link" class="section-link" style="font-size: 11.5px; color: var(--primary);" onclick="toggleQuickSplitMode()">Split across 2 categories →</button>
               </div>
               <select id="quick-expense-category-select" class="form-input" onchange="onQuickCategorySelectChange()">
                 <!-- Populated dynamically via app.js -->
@@ -2111,10 +1908,11 @@
             </div>
           </div>
 
-          <!-- Split Category Mode Container -->
-          <div id="quick-split-cat-container" class="split-allocation-box" style="display: none;">
-            <div style="font-size: 11.5px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
-              SPLIT ALLOCATION (AUTO-BALANCED ACROSS 2 CATEGORIES)
+          <!-- Split Category Mode Container (behind 'Split' link) -->
+          <div id="quick-split-cat-container" class="split-allocation-box" style="display: none; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 11.5px; font-weight: 700; color: var(--primary);">SPLIT (2 CATEGORIES)</span>
+              <button type="button" class="section-link" style="font-size: 11px;" onclick="toggleQuickSplitMode()">Switch to single category</button>
             </div>
 
             <div class="split-alloc-row" style="margin-bottom: 4px;">
@@ -2139,33 +1937,30 @@
             </div>
           </div>
 
-          <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label">STORE / MERCHANT NAME *</label>
-              <input id="quick-expense-merchant" type="text" class="form-input" placeholder="e.g. Swiggy / Toit / Blinkit" oninput="validateQuickExpenseFields()">
-              <div id="quick-merchant-error" class="field-error-msg"></div>
+          <!-- Collapsible Optional Details (Merchant, Date, Note) -->
+          <div style="margin-bottom: 14px;">
+            <button type="button" class="section-link" style="font-size: 12px; color: var(--text-secondary);" onclick="toggleQuickExpenseOptionalFields()">
+              <span id="quick-expense-opt-toggle-label">+ Add merchant or change date (optional) ▼</span>
+            </button>
+            <div id="quick-expense-optional-fields" style="display: none; margin-top: 10px; padding: 10px; background: var(--bg-subtle); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+              <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                  <label class="form-label">MERCHANT (OPTIONAL)</label>
+                  <input id="quick-expense-merchant" type="text" class="form-input" placeholder="e.g. Swiggy / Blinkit">
+                </div>
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                  <label class="form-label">DATE</label>
+                  <input id="quick-expense-date" type="date" class="form-input" value="2026-10-20">
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">OPTIONAL NOTE</label>
+                <input id="quick-expense-note" type="text" class="form-input" placeholder="e.g. Dinner with team">
+              </div>
             </div>
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label">TRANSACTION DATE *</label>
-              <input id="quick-expense-date" type="date" class="form-input" value="2026-10-20" onchange="validateQuickExpenseFields()">
-              <div id="quick-date-error" class="field-error-msg"></div>
-            </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">OPTIONAL NOTE</label>
-            <input id="quick-expense-note" type="text" class="form-input" placeholder="e.g. Dinner with team / grocery refill">
-          </div>
-
-          <!-- Deduct from current balance checkbox -->
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 12.5px; color: var(--text-secondary);">
-            <input id="quick-expense-deduct-balance" type="checkbox" checked style="accent-color: var(--primary); width: 16px; height: 16px;">
-            <label for="quick-expense-deduct-balance" style="cursor: pointer;">
-              Also deduct from current available bank balance
-            </label>
-          </div>
-
-          <button id="btn-save-quick-expense" type="button" class="btn-primary" onclick="submitQuickExpense()">
+          <button id="btn-save-quick-expense" type="button" class="btn-primary" style="height: 44px; font-size: 14px;" onclick="submitQuickExpense()">
             Save Expense
           </button>
         </div>
@@ -2301,15 +2096,24 @@
               <h3 id="gdetail-title">Goa trip with friends</h3>
               <p id="gdetail-status-sub">Target Completion: March 2027 · On Track</p>
             </div>
-            <button type="button" class="icon-btn" onclick="closeBottomSheet('goal-detail-sheet')" aria-label="Close goal details">✕</button>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <button type="button" class="bcat-delete-btn" style="width: 36px; height: 36px;" onclick="deleteSelectedGoalFromDetail()" title="Delete goal" aria-label="Delete goal">✕</button>
+              <button type="button" class="icon-btn" onclick="closeBottomSheet('goal-detail-sheet')" aria-label="Close goal details">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
           </div>
 
           <div id="gdetail-body-content">
             <!-- Dynamically populated via app.js -->
           </div>
 
-          <div style="margin-top: 14px;">
-            <button type="button" class="btn-secondary" onclick="closeBottomSheet('goal-detail-sheet')">Close</button>
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button type="button" class="btn-primary" style="flex: 2; height: 42px; font-size: 13px;" onclick="openEditGoalFromDetail()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              Edit Goal
+            </button>
+            <button type="button" class="btn-secondary" style="flex: 1; height: 42px; font-size: 13px;" onclick="closeBottomSheet('goal-detail-sheet')">Close</button>
           </div>
         </div>
 
@@ -2355,7 +2159,7 @@
               <button type="button" class="btn-primary" style="width: auto; height: 38px; padding: 0 12px; font-size: 12px;" onclick="parseCustomNotificationText()">Parse</button>
             </div>
             <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
-              <button type="button" class="wb-btn" style="font-size: 10px; padding: 2px 6px;" onclick="loadSampleNotificationFeed()">+ Load Sample Multi-Source Feed (Swiggy, Duplicate, Refund, Self-Transfer)</button>
+              <button type="button" class="wb-btn" style="font-size: 11px; padding: 2px 6px;" onclick="loadSampleNotificationFeed()">+ Load Sample Multi-Source Feed (Swiggy, Duplicate, Refund, Self-Transfer)</button>
             </div>
           </div>
 
@@ -2566,8 +2370,27 @@
             <input id="edit-cat-limit-input" type="number" class="form-input tabular-nums" value="">
           </div>
           <div style="display: flex; gap: 8px; margin-top: 16px;">
-            <button class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('edit-category-modal')">Cancel</button>
-            <button class="btn-primary" style="flex: 1;" onclick="saveEditedCategory()">Save Changes</button>
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('edit-category-modal')">Cancel</button>
+            <button type="button" class="btn-primary" style="flex: 1;" onclick="saveEditedCategory()">Save Changes</button>
+          </div>
+          <div id="edit-cat-delete-container" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-subtle); display: flex; justify-content: center;">
+            <button type="button" class="skip-btn" style="color: #DC2626; font-size: 12px; font-weight: 600;" onclick="promptDeleteCurrentEditedCategory()">
+              Delete this category
+            </button>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             MODAL: DELETE CATEGORY CONFIRMATION
+             ========================================================== -->
+        <div id="confirm-delete-category-modal" class="dialog-modal" style="max-width: 330px;">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 6px; color: #111827;">Delete Category?</h3>
+          <p id="confirm-delete-cat-text" style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 16px;">
+            Are you sure you want to delete this category? All recorded expenses under this category will also be removed.
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('confirm-delete-category-modal')">Cancel</button>
+            <button type="button" class="btn-danger" style="flex: 1; background: #DC2626; color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; height: 38px;" onclick="confirmDeleteCategoryFromModal()">Delete</button>
           </div>
         </div>
 
@@ -2627,6 +2450,19 @@
             <label class="form-label">LINKED ACCOUNT / SIP</label>
             <input id="edit-goal-account-input" type="text" class="form-input" value="HDFC Savings ···4821 / Liquid Fund SIP" placeholder="e.g. HDFC Savings ···4821 or Parag Parikh Liquid SIP">
           </div>
+
+          <!-- Auto-debit recurring setting -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-subtle); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 10px;">
+            <div>
+              <div style="font-size: 12.5px; font-weight: 700; color: var(--text-primary);">Auto-debit recurring savings</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">Deduct this goal's contribution automatically on payday</div>
+            </div>
+            <label class="toggle-switch" style="margin-left: 10px;">
+              <input id="edit-goal-autodebit-toggle" type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
           <div id="modal-goal-projection" class="goal-projection-badge" style="margin-top: 4px;">
             <span id="modal-goal-projection-text">5 months needed • Projected completion: March 2027</span>
           </div>
@@ -2634,6 +2470,25 @@
           <div style="display: flex; gap: 8px; margin-top: 14px;">
             <button class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('edit-goal-modal')">Cancel</button>
             <button class="btn-primary" style="flex: 1;" onclick="saveEditedGoal()">Save Goal</button>
+          </div>
+          <div id="edit-goal-delete-container" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-subtle); display: flex; justify-content: center;">
+            <button type="button" class="skip-btn" style="color: #DC2626; font-size: 12px; font-weight: 600;" onclick="promptDeleteCurrentEditedGoal()">
+              Delete this goal
+            </button>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             MODAL: DELETE GOAL CONFIRMATION
+             ========================================================== -->
+        <div id="confirm-delete-goal-modal" class="dialog-modal" style="max-width: 330px;">
+          <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 6px; color: #111827;">Delete Goal?</h3>
+          <p id="confirm-delete-goal-text" style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 16px;">
+            Are you sure you want to delete this savings goal? This will stop future cycle allocations.
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModalDialog('confirm-delete-goal-modal')">Cancel</button>
+            <button type="button" class="btn-danger" style="flex: 1; background: #DC2626; color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;" onclick="confirmDeleteGoalFromModal()">Delete</button>
           </div>
         </div>
 
