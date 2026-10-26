@@ -588,29 +588,6 @@
                 <button type="button" class="btn-primary" style="margin-top: 10px;" onclick="openBalanceCheckinSheet()">Add your balance</button>
               </div>
 
-              <!-- Guided Next Step Card (Replaces empty states for new users) -->
-              <div id="home-guided-next-step" class="guided-next-step-card" style="display: none;">
-                <div class="guided-step-header">
-                  <span id="guided-step-badge" class="guided-accuracy-badge">40% accurate</span>
-                  <span style="font-size: 11px; font-weight: 700; color: var(--primary);">Guided Next Step</span>
-                </div>
-                <div id="guided-step-title" class="guided-step-title">Add rent &amp; EMIs → biggest impact</div>
-                <div id="guided-step-subtitle" class="guided-step-subtitle">Quickly ring-fence your major commitments so your Safe to Spend estimate is fully trustworthy.</div>
-
-                <div id="guided-step-quick-chips" class="quick-bill-chips">
-                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Rent', 20000, 2)">+ Rent</button>
-                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Phone EMI', 4000, 22)">+ EMI</button>
-                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Electricity', 1500, 15)">+ Electricity</button>
-                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Wi-Fi', 999, 18)">+ Wi-Fi</button>
-                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Cook/Maid', 3500, 5)">+ Cook/Maid</button>
-                  <button type="button" class="quick-bill-chip" onclick="quickAddChipBill('Insurance', 7000, 28)">+ Insurance</button>
-                </div>
-
-                <button id="guided-step-action-btn" type="button" class="btn-primary" style="height: 38px; font-size: 12.5px;" onclick="openQuickBillModal()">
-                  Add a bill now
-                </button>
-              </div>
-
               <!-- 10.1 Empty State Box for Safe to Spend (Fallback) -->
               <div id="home-empty-state" class="empty-state-box" style="display: none;">
                 <div class="empty-state-icon">

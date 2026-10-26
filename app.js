@@ -1214,14 +1214,6 @@ function renderHomeScreen(fin) {
     heroEmptyState.style.display = hasIncome ? "none" : "flex";
   }
 
-  // Guided Next Step Card handling: Show when income is set up and user is new
-  if (guidedNextStepCard) {
-    guidedNextStepCard.style.display = (hasIncome && isBrandNewUser) ? "block" : "none";
-    if (hasIncome && isBrandNewUser) {
-      updateGuidedNextStepContent();
-    }
-  }
-
   if (!hasIncome) {
     if (heroCard) heroCard.style.display = "none";
     if (heroZeroCard) heroZeroCard.style.display = "none";
